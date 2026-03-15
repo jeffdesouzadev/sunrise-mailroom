@@ -1,0 +1,28 @@
+# env files
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.py[cod]
+*.sqlite3
+.venv/
+venv/
+
+# django/static/media
+staticfiles/
+media/
+
+# node
+node_modules/
+dist/
+build/
+
+# logs
+*.log
+
+# editor/system
+.vscode/
+.idea/
+.DS_Store
