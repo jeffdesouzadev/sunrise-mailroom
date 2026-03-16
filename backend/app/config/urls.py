@@ -16,7 +16,22 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from mailroom.views import health_check
+from django.http import JsonResponse
+
+def home(request):
+    return JsonResponse({
+        "message": "Sunrise Mailroom backend is running"
+    })
+
+
+def health(request):
+    return JsonResponse({
+        "status": "ok"
+    })
 
 urlpatterns = [
+    path("", home, name="home"),  
     path('admin/', admin.site.urls),
+    path('api/health/', health_check),
 ]
