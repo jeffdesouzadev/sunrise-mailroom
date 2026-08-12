@@ -3,7 +3,9 @@ from django.urls import path
 from mailroom.views import (
     # existing views...
     export_visits,
+    import_visits,
 )
+
 
 from mailroom.views import (
     home,
@@ -30,5 +32,9 @@ urlpatterns = [
     path(
         "api/export/visits/",
         export_visits,
+    ),
+    path(
+        "api/import/visits/",
+        import_visits,
     ),
 ]
