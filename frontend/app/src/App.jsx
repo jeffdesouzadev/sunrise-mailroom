@@ -97,6 +97,7 @@ function App() {
   const [newClientName, setNewClientName] = useState("");
 
   const [success, setSuccess] = useState(null);
+  const [page, setPage] = useState("checkin");
 
 
   const exportYears = Array.from(
@@ -293,6 +294,7 @@ function App() {
   }
 
   if (success) {
+      
     return (
       <main className="app-shell">
         <div className="mailroom-card">
@@ -335,290 +337,364 @@ function App() {
       <div className="mailroom-card">
         <header className="app-header">
           <h1>Sunrise Mailroom</h1>
-          <p>Client visit check-in</p>
+
+          <p>
+            {page === "checkin"
+              ? "Client visit check-in"
+              : "Data management"}
+          </p>
+
+          <div className="page-nav">
+            {page === "checkin" ? (
+              <button
+                type="button"
+                className="page-nav-button"
+                onClick={() => {
+                  setError("");
+                  setPage("data");
+                }}
+              >
+                Data & Export
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="page-nav-button"
+                onClick={() => {
+                  setError("");
+                  setPage("checkin");
+                }}
+              >
+                ← Back to Check-In
+              </button>
+            )}
+          </div>
         </header>
 
-        <section className="search-panel">
-          <form onSubmit={searchClients}>
-            <label className="field-label" htmlFor="dob">
-              Date of birth
-            </label>
+        {page === "checkin" && (
+          <>
+            <section className="search-panel">
+              <form onSubmit={searchClients}>
+                <label className="field-label" htmlFor="dob">
+                  Date of birth
+                </label>
 
-            <input
-              id="dob"
-              className="dob-input"
-              type="text"
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="MM/DD/YYYY"
-              value={dob}
-              onChange={(event) => {
-                setDob(formatDobInput(event.target.value));
-              }}
-              autoFocus
-            />
+                <input
+                  id="dob"
+                  className="dob-input"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="MM/DD/YYYY"
+                  value={dob}
+                  onChange={(event) => {
+                    setDob(formatDobInput(event.target.value));
+                  }}
+                  autoFocus
+                />
 
-            <p className="field-hint">
-              Enter the client's birthday. No date picker needed.
-            </p>
+                <p className="field-hint">
+                  Enter the client's birthday. No date picker needed.
+                </p>
 
-            <div className="name-search">
-              <label className="field-label" htmlFor="name">
-                Name lookup
-              </label>
+                <div className="name-search">
+                  <label className="field-label" htmlFor="name">
+                    Name lookup
+                  </label>
 
-              <input
-                id="name"
-                className="name-input"
-                type="text"
-                autoComplete="off"
-                placeholder="Full or partial name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
+                  <input
+                    id="name"
+                    className="name-input"
+                    type="text"
+                    autoComplete="off"
+                    placeholder="Full or partial name"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                  />
 
-              <p className="field-hint">
-                Optional — use this if the birthday is unavailable,
-                or combine it with the birthday to narrow the results.
-              </p>
-            </div>
-
-            <button
-              className="pickup-button"
-              type="submit"
-              disabled={loading}
-              style={{
-                width: "100%",
-                marginTop: "28px",
-              }}
-            >
-              {loading ? "Searching..." : "Find Person"}
-            </button>
-          </form>
-
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
-        </section>
-
-        {clients.length > 0 && (
-          <section className="results-section">
-            <p className="results-heading">
-              {clients.length === 1
-                ? "1 matching person"
-                : `${clients.length} matching people`}
-            </p>
-
-            {clients.map((client) => (
-              <article className="client-card" key={client.id}>
-                <div className="client-details">
-                  <h2>{client.full_name}</h2>
-
-                  <p>
-                    Date of birth:{" "}
-                    <strong>
-                      {formatDob(client.date_of_birth)}
-                    </strong>
-                  </p>
-
-                  <p>
-                    Age:{" "}
-                    <strong>
-                      {calculateAge(client.date_of_birth)}
-                    </strong>
-                  </p>
-
-                  <p className="visit-summary">
-                    Latest visit:{" "}
-                    <strong>
-                      {formatVisit(client.last_visit_at)}
-                    </strong>
-                  </p>
-
-                  <p>
-                    Visits:{" "}
-                    <strong>
-                      {client.visit_count ?? 0}
-                    </strong>
+                  <p className="field-hint">
+                    Optional — use this if the birthday is unavailable,
+                    or combine it with the birthday to narrow the results.
                   </p>
                 </div>
 
                 <button
                   className="pickup-button"
-                  type="button"
+                  type="submit"
                   disabled={loading}
-                  onClick={() => recordVisit(client)}
+                  style={{
+                    width: "100%",
+                    marginTop: "28px",
+                  }}
                 >
-                  Record Visit
+                  {loading ? "Searching..." : "Find Person"}
                 </button>
-              </article>
-            ))}
-          </section>
-        )}
+              </form>
 
-      {showNewClient && (
-        <>
-          <div className="empty-message">
-            No matching person was found.
-          </div>
+              {error && (
+                <div className="error-message">
+                  {error}
+                </div>
+              )}
+            </section>
 
-          <form
-            className="new-client-form"
-            onSubmit={createClient}
-          >
-            <h2>Add new person</h2>
+            {clients.length > 0 && (
+              <section className="results-section">
+                <p className="results-heading">
+                  {clients.length === 1
+                    ? "1 matching person"
+                    : `${clients.length} matching people`}
+                </p>
 
-            <label
-              className="field-label"
-              htmlFor="new-client-name"
-            >
-              Full name
-            </label>
+                {clients.map((client) => (
+                  <article className="client-card" key={client.id}>
+                    <div className="client-details">
+                      <h2>{client.full_name}</h2>
 
-            <input
-              id="new-client-name"
-              className="name-input"
-              type="text"
-              value={newClientName}
-              onChange={(event) =>
-                setNewClientName(event.target.value)
-              }
-              placeholder="Full name"
-            />
+                      <p>
+                        Date of birth:{" "}
+                        <strong>
+                          {formatDob(client.date_of_birth)}
+                        </strong>
+                      </p>
 
-            <div className="new-client-dob">
-              Date of birth:{" "}
-              <strong>
-                {dob || "Not entered"}
-              </strong>
-            </div>
+                      <p>
+                        Age:{" "}
+                        <strong>
+                          {calculateAge(client.date_of_birth)}
+                        </strong>
+                      </p>
 
-            <div className="form-actions">
+                      <p className="visit-summary">
+                        Latest visit:{" "}
+                        <strong>
+                          {formatVisit(client.last_visit_at)}
+                        </strong>
+                      </p>
+
+                      <p>
+                        Visits:{" "}
+                        <strong>
+                          {client.visit_count ?? 0}
+                        </strong>
+                      </p>
+                    </div>
+
+                    <button
+                      className="pickup-button"
+                      type="button"
+                      disabled={loading}
+                      onClick={() => recordVisit(client)}
+                    >
+                      Record Visit
+                    </button>
+                  </article>
+                ))}
+              </section>
+            )}
+
+            {showNewClient && (
+              <>
+                <div className="empty-message">
+                  {clients.length === 0
+                    ? "No matching person was found."
+                    : "Add a new person instead."}
+                </div>
+
+                <form
+                  className="new-client-form"
+                  onSubmit={createClient}
+                >
+                  <h2>Add new person</h2>
+
+                  <label
+                    className="field-label"
+                    htmlFor="new-client-name"
+                  >
+                    Full name
+                  </label>
+
+                  <input
+                    id="new-client-name"
+                    className="name-input"
+                    type="text"
+                    value={newClientName}
+                    onChange={(event) =>
+                      setNewClientName(event.target.value)
+                    }
+                    placeholder="Full name"
+                  />
+
+                  <div className="new-client-dob">
+                    Date of birth:{" "}
+                    <strong>
+                      {dob || "Not entered"}
+                    </strong>
+                  </div>
+
+                  <div className="form-actions">
+                    <button
+                      className="save-person-button"
+                      type="submit"
+                      disabled={loading}
+                    >
+                      {loading
+                        ? "Saving..."
+                        : "Add Person & Record Visit"}
+                    </button>
+
+                    <button
+                      className="cancel-button"
+                      type="button"
+                      disabled={loading}
+                      onClick={() => {
+                        setShowNewClient(false);
+                        setNewClientName("");
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+
+            {clients.length > 0 && !showNewClient && (
               <button
-                className="save-person-button"
-                type="submit"
-                disabled={loading}
-              >
-                {loading
-                  ? "Saving..."
-                  : "Add Person & Record Visit"}
-              </button>
-
-              <button
-                className="cancel-button"
+                className="add-person-button"
                 type="button"
-                disabled={loading}
                 onClick={() => {
-                  setShowNewClient(false);
-                  setNewClientName("");
+                  setShowNewClient(true);
+
+                  if (name.trim()) {
+                    setNewClientName(name.trim());
+                  }
                 }}
               >
-                Cancel
+                None of these people — add new person
               </button>
-            </div>
-          </form>
-        </>
-      )}
+            )}
+          </>
+        )}
 
-      {clients.length > 0 && !showNewClient && (
-        <button
-          className="add-person-button"
-          type="button"
-          onClick={() => {
-            setShowNewClient(true);
-
-            if (name.trim()) {
-              setNewClientName(name.trim());
-            }
-          }}
-        >
-          None of these people — add new person
-        </button>
-      )}
-
-
-      <section className="export-panel">
-        <div className="export-heading">
-          <h2>Export visit log</h2>
-          <p>
-            Download a full year, organized into one sheet per month.
-          </p>
-        </div>
-
-        <div className="year-buttons">
-          {exportYears.map((year) => (
-            <button
-              key={year}
-              type="button"
-              className={
-                year === currentYear
-                  ? "year-button current-year"
-                  : "year-button"
-              }
-              onClick={() => exportYear(year)}
-            >
-              {year}
-            </button>
-          ))}
-        </div>
-
-        <div className="custom-export">
-          <h3>Custom date range</h3>
-
-          <form
-            className="date-range-form"
-            onSubmit={exportDateRange}
-          >
-            <div className="date-range-field">
-              <label
-                className="field-label"
-                htmlFor="export-start"
-              >
-                Start
-              </label>
-
-              <input
-                id="export-start"
-                type="date"
-                value={exportStart}
-                onChange={(event) =>
-                  setExportStart(event.target.value)
-                }
-              />
+        {page === "data" && (
+          <section className="data-panel">
+            <div className="data-heading">
+              <h2>Data Management</h2>
+              <p>
+                Export visit records or import historical data.
+              </p>
             </div>
 
-            <div className="date-range-field">
-              <label
-                className="field-label"
-                htmlFor="export-end"
-              >
-                End
-              </label>
+            <div className="data-action-grid">
+              <section className="data-action-card">
+                <h3>Export Visit Log</h3>
 
-              <input
-                id="export-end"
-                type="date"
-                value={exportEnd}
-                onChange={(event) =>
-                  setExportEnd(event.target.value)
-                }
-              />
+                <p>
+                  Download visit history as an Excel workbook,
+                  organized by month.
+                </p>
+
+                <div className="year-buttons">
+                  {exportYears.map((year) => (
+                    <button
+                      key={year}
+                      type="button"
+                      className={
+                        year === currentYear
+                          ? "year-button current-year"
+                          : "year-button"
+                      }
+                      onClick={() => exportYear(year)}
+                    >
+                      {year}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="custom-export">
+                  <h4>Custom date range</h4>
+
+                  <form
+                    className="date-range-form"
+                    onSubmit={exportDateRange}
+                  >
+                    <div className="date-range-field">
+                      <label
+                        className="field-label"
+                        htmlFor="export-start"
+                      >
+                        Start
+                      </label>
+
+                      <input
+                        id="export-start"
+                        type="date"
+                        value={exportStart}
+                        onChange={(event) =>
+                          setExportStart(event.target.value)
+                        }
+                      />
+                    </div>
+
+                    <div className="date-range-field">
+                      <label
+                        className="field-label"
+                        htmlFor="export-end"
+                      >
+                        End
+                      </label>
+
+                      <input
+                        id="export-end"
+                        type="date"
+                        value={exportEnd}
+                        onChange={(event) =>
+                          setExportEnd(event.target.value)
+                        }
+                      />
+                    </div>
+
+                    <button
+                      className="export-range-button"
+                      type="submit"
+                    >
+                      Export Range
+                    </button>
+                  </form>
+                </div>
+              </section>
+
+              <section className="data-action-card disabled-card">
+                <div className="coming-soon-badge">
+                  Coming soon
+                </div>
+
+                <h3>Import Visit Log</h3>
+
+                <p>
+                  Import existing spreadsheet records into
+                  Sunrise Mailroom.
+                </p>
+
+                <button
+                  type="button"
+                  className="import-button"
+                  disabled
+                >
+                  Import Excel File
+                </button>
+              </section>
             </div>
 
-            <button
-              className="export-range-button"
-              type="submit"
-            >
-              Export Range
-            </button>
-          </form>        
-        </div>
-        </section>
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
+          </section>
+        )}
       </div>
-
-      
     </main>
   );
 }
