@@ -2,6 +2,10 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from datetime import date, datetime, time, timedelta
 from io import BytesIO
+from django.db import transaction
+from django.utils import timezone
+
+from .importers import parse_workbook
 
 from django.http import HttpResponse
 from django.utils import timezone
@@ -315,7 +319,10 @@ def export_visits(request):
         worksheet.append([
             visit.client.date_of_birth,
             visit.client.full_name,
-            local_visit.replace(tzinfo=None),
+            local_visit.replace(
+                tzinfo=None,
+                microsecond=0,
+            ),
         ])
 
         row_number = worksheet.max_row
@@ -360,3 +367,118 @@ def export_visits(request):
     )
 
     return response
+
+@api_view(["POST"])
+def import_visits(request):
+    uploaded_file = request.FILES.get("file")
+
+    if not uploaded_file:
+        return Response(
+            {
+                "error": "No Excel file was provided."
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not uploaded_file.name.lower().endswith(".xlsx"):
+        return Response(
+            {
+                "error": "Only .xlsx files are supported."
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        parsed = parse_workbook(uploaded_file)
+
+    except ValueError as exc:
+        return Response(
+            {
+                "error": str(exc),
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    except NotImplementedError as exc:
+        return Response(
+            {
+                "error": str(exc),
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    valid_records = [
+        record
+        for record in parsed["records"]
+        if record["valid"]
+    ]
+
+    invalid_records = [
+        record
+        for record in parsed["records"]
+        if not record["valid"]
+    ]
+
+    clients_created = 0
+    clients_existing = 0
+    visits_created = 0
+    duplicates_skipped = 0
+
+    current_timezone = timezone.get_current_timezone()
+
+    with transaction.atomic():
+        for record in valid_records:
+            client, created = Client.objects.get_or_create(
+                full_name=record["full_name"],
+                date_of_birth=record["date_of_birth"],
+            )
+
+            if created:
+                clients_created += 1
+            else:
+                clients_existing += 1
+
+            visited_at = record["visited_at"]
+
+            if timezone.is_naive(visited_at):
+                visited_at = timezone.make_aware(
+                    visited_at,
+                    current_timezone,
+                )
+
+            visit_second_start = visited_at.replace(
+                microsecond=0
+            )
+
+            visit_second_end = visit_second_start + timedelta(
+                seconds=1
+            )
+
+            existing_visit = Visit.objects.filter(
+                client=client,
+                visited_at__gte=visit_second_start,
+                visited_at__lt=visit_second_end,
+            ).exists()
+
+            if existing_visit:
+                duplicates_skipped += 1
+                continue
+
+            Visit.objects.create(
+                client=client,
+                visited_at=visited_at,
+            )
+
+            visits_created += 1
+
+    return Response({
+        "format": parsed["format"],
+        "rows_read": len(parsed["records"]),
+        "valid_rows": len(valid_records),
+        "invalid_rows": len(invalid_records),
+        "clients_created": clients_created,
+        "clients_existing": clients_existing,
+        "visits_created": visits_created,
+        "duplicates_skipped": duplicates_skipped,
+        "errors": invalid_records[:50],
+    })
