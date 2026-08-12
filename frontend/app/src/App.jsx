@@ -23,6 +23,29 @@ function normalizeDob(value) {
   return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }
 
+function calculateAge(dateOfBirth) {
+  if (!dateOfBirth) {
+    return null;
+  }
+
+  const [year, month, day] = dateOfBirth.split("-").map(Number);
+
+  const today = new Date();
+  let age = today.getFullYear() - year;
+
+  const birthdayThisYear = new Date(
+    today.getFullYear(),
+    month - 1,
+    day
+  );
+
+  if (today < birthdayThisYear) {
+    age -= 1;
+  }
+
+  return age;
+}
+
 function formatDobInput(value) {
   const digits = value.replace(/\D/g, "").slice(0, 8);
 
@@ -360,10 +383,17 @@ function App() {
                     </strong>
                   </p>
 
+                  <p>
+                    Age:{" "}
+                    <strong>
+                      {calculateAge(client.date_of_birth)}
+                    </strong>
+                  </p>
+
                   <p className="visit-summary">
                     Latest visit:{" "}
                     <strong>
-                      {formatVisit(client.latest_visit)}
+                      {formatVisit(client.last_visit_at)}
                     </strong>
                   </p>
 
