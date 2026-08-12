@@ -32,31 +32,27 @@ def client_list(request):
         clients = Client.objects.all()
 
         dob = request.GET.get("dob")
-        name = request.GET.get("name")
+        name = request.GET.get("name", "").strip()
 
-        #
-        # Birthday is the primary narrowing mechanism.
-        #
+        # Birthday remains the primary narrowing mechanism.
         if dob:
-            clients = clients.filter(date_of_birth=dob)
+            clients = clients.filter(
+                date_of_birth=dob
+            )
 
-        #
-        # Treat each entered name as a search token.
+        # Treat each entered name fragment as a required token.
         #
         # Example:
         #
-        #   "juan cruz"
+        #   ?name=jean damme
         #
-        # becomes:
+        # matches:
         #
-        #   full_name contains "juan"
-        #   AND
-        #   full_name contains "cruz"
+        #   Jean Claude Van Damme
         #
+        # because full_name must contain both "jean" AND "damme".
         if name:
-            tokens = name.strip().split()
-
-            for token in tokens:
+            for token in name.split():
                 clients = clients.filter(
                     full_name__icontains=token
                 )
@@ -70,7 +66,9 @@ def client_list(request):
 
         return Response(serializer.data)
 
-    serializer = ClientSerializer(data=request.data)
+    serializer = ClientSerializer(
+        data=request.data
+    )
 
     if serializer.is_valid():
         serializer.save()
@@ -88,7 +86,10 @@ def client_list(request):
 
 @api_view(["GET", "PATCH", "DELETE"])
 def client_detail(request, pk):
-    client = get_object_or_404(Client, pk=pk)
+    client = get_object_or_404(
+        Client,
+        pk=pk,
+    )
 
     if request.method == "GET":
         serializer = ClientDetailSerializer(client)
@@ -103,7 +104,6 @@ def client_detail(request, pk):
 
         if serializer.is_valid():
             serializer.save()
-
             return Response(serializer.data)
 
         return Response(
@@ -120,7 +120,10 @@ def client_detail(request, pk):
 
 @api_view(["POST"])
 def client_visit(request, pk):
-    client = get_object_or_404(Client, pk=pk)
+    client = get_object_or_404(
+        Client,
+        pk=pk,
+    )
 
     visit = Visit.objects.create(
         client=client,
