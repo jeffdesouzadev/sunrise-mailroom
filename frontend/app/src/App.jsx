@@ -126,6 +126,8 @@ function App() {
         if (enteredName) {
           setNewClientName(enteredName);
         }
+      } else {
+        setShowNewClient(false);
       }
     } catch (err) {
       console.error(err);
@@ -386,79 +388,85 @@ function App() {
           </section>
         )}
 
-        {showNewClient && (
-          <>
-            <div className="empty-message">
-              No matching person was found.
+      {showNewClient && (
+        <>
+          <div className="empty-message">
+            No matching person was found.
+          </div>
+
+          <form
+            className="new-client-form"
+            onSubmit={createClient}
+          >
+            <h2>Add new person</h2>
+
+            <label
+              className="field-label"
+              htmlFor="new-client-name"
+            >
+              Full name
+            </label>
+
+            <input
+              id="new-client-name"
+              className="name-input"
+              type="text"
+              value={newClientName}
+              onChange={(event) =>
+                setNewClientName(event.target.value)
+              }
+              placeholder="Full name"
+            />
+
+            <div className="new-client-dob">
+              Date of birth:{" "}
+              <strong>
+                {dob || "Not entered"}
+              </strong>
             </div>
 
-            <button
-              className="add-person-button"
-              type="button"
-              onClick={() =>
-                setShowNewClient((current) => !current)
-              }
-            >
-              + Add New Person
-            </button>
-
-            <form
-              className="new-client-form"
-              onSubmit={createClient}
-            >
-              <h2>Add new person</h2>
-
-              <label
-                className="field-label"
-                htmlFor="new-client-name"
+            <div className="form-actions">
+              <button
+                className="save-person-button"
+                type="submit"
+                disabled={loading}
               >
-                Full name
-              </label>
+                {loading
+                  ? "Saving..."
+                  : "Add Person & Record Visit"}
+              </button>
 
-              <input
-                id="new-client-name"
-                className="name-input"
-                type="text"
-                value={newClientName}
-                onChange={(event) =>
-                  setNewClientName(event.target.value)
-                }
-                placeholder="Full name"
-              />
+              <button
+                className="cancel-button"
+                type="button"
+                disabled={loading}
+                onClick={() => {
+                  setShowNewClient(false);
+                  setNewClientName("");
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </>
+      )}
 
-              <div className="new-client-dob">
-                Date of birth:{" "}
-                <strong>
-                  {dob || "Not entered"}
-                </strong>
-              </div>
+      {clients.length > 0 && !showNewClient && (
+        <button
+          className="add-person-button"
+          type="button"
+          onClick={() => {
+            setShowNewClient(true);
 
-              <div className="form-actions">
-                <button
-                  className="save-person-button"
-                  type="submit"
-                  disabled={loading}
-                >
-                  {loading
-                    ? "Saving..."
-                    : "Add Person & Record Visit"}
-                </button>
-
-                <button
-                  className="cancel-button"
-                  type="button"
-                  disabled={loading}
-                  onClick={() => {
-                    setShowNewClient(false);
-                    setNewClientName("");
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </>
-        )}
+            if (name.trim()) {
+              setNewClientName(name.trim());
+            }
+          }}
+        >
+          None of these people — add new person
+        </button>
+      )}
       </div>
     </main>
   );
