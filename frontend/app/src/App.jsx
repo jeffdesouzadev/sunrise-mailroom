@@ -2,6 +2,8 @@ import { useState } from "react";
 import "./App.css";
 
 const API_BASE = "http://127.0.0.1:8000/api";
+const currentYear = new Date().getFullYear();
+
 
 function normalizeDob(value) {
   const cleaned = value.trim();
@@ -96,6 +98,16 @@ function App() {
 
   const [success, setSuccess] = useState(null);
 
+
+  const exportYears = Array.from(
+    { length: 5 },
+    (_, index) => currentYear - index
+  );
+
+  const [exportStart, setExportStart] = useState("");
+  const [exportEnd, setExportEnd] = useState("");
+
+
   async function searchClients(event) {
     event?.preventDefault();
 
@@ -105,6 +117,7 @@ function App() {
 
     const enteredDob = dob.trim();
     const enteredName = name.trim();
+    
 
     if (!enteredDob && !enteredName) {
       setError("Enter a date of birth or a name.");
@@ -158,6 +171,33 @@ function App() {
     } finally {
       setLoading(false);
     }
+  }
+
+
+  function exportYear(year) {
+    window.location.href =
+      `${API_BASE}/export/visits/?year=${year}`;
+  }
+
+  function exportDateRange(event) {
+    event.preventDefault();
+
+    if (!exportStart || !exportEnd) {
+      setError("Choose both a start and end date.");
+      return;
+    }
+
+    if (exportEnd < exportStart) {
+      setError("The export end date must come after the start date.");
+      return;
+    }
+
+    setError("");
+
+    window.location.href =
+      `${API_BASE}/export/visits/` +
+      `?start=${encodeURIComponent(exportStart)}` +
+      `&end=${encodeURIComponent(exportEnd)}`;
   }
 
   async function recordVisit(client) {
@@ -497,7 +537,88 @@ function App() {
           None of these people — add new person
         </button>
       )}
+
+
+      <section className="export-panel">
+        <div className="export-heading">
+          <h2>Export visit log</h2>
+          <p>
+            Download a full year, organized into one sheet per month.
+          </p>
+        </div>
+
+        <div className="year-buttons">
+          {exportYears.map((year) => (
+            <button
+              key={year}
+              type="button"
+              className={
+                year === currentYear
+                  ? "year-button current-year"
+                  : "year-button"
+              }
+              onClick={() => exportYear(year)}
+            >
+              {year}
+            </button>
+          ))}
+        </div>
+
+        <div className="custom-export">
+          <h3>Custom date range</h3>
+
+          <form
+            className="date-range-form"
+            onSubmit={exportDateRange}
+          >
+            <div className="date-range-field">
+              <label
+                className="field-label"
+                htmlFor="export-start"
+              >
+                Start
+              </label>
+
+              <input
+                id="export-start"
+                type="date"
+                value={exportStart}
+                onChange={(event) =>
+                  setExportStart(event.target.value)
+                }
+              />
+            </div>
+
+            <div className="date-range-field">
+              <label
+                className="field-label"
+                htmlFor="export-end"
+              >
+                End
+              </label>
+
+              <input
+                id="export-end"
+                type="date"
+                value={exportEnd}
+                onChange={(event) =>
+                  setExportEnd(event.target.value)
+                }
+              />
+            </div>
+
+            <button
+              className="export-range-button"
+              type="submit"
+            >
+              Export Range
+            </button>
+          </form>        
+        </div>
+        </section>
       </div>
+
+      
     </main>
   );
 }

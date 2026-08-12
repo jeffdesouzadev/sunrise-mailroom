@@ -1,5 +1,12 @@
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from datetime import date, datetime, time, timedelta
+from io import BytesIO
+
+from django.http import HttpResponse
+from django.utils import timezone
+from openpyxl import Workbook
+from openpyxl.styles import Font
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -135,3 +142,221 @@ def client_visit(request, pk):
         serializer.data,
         status=status.HTTP_201_CREATED,
     )
+
+@api_view(["GET"])
+def export_visits(request):
+    year_param = request.GET.get("year")
+    start_param = request.GET.get("start")
+    end_param = request.GET.get("end")
+
+    #
+    # Determine requested date range.
+    #
+    if year_param:
+        try:
+            year = int(year_param)
+        except ValueError:
+            return Response(
+                {"error": "Invalid year."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        start_date = date(year, 1, 1)
+        end_date = date(year, 12, 31)
+
+    elif start_param and end_param:
+        try:
+            start_date = date.fromisoformat(start_param)
+            end_date = date.fromisoformat(end_param)
+        except ValueError:
+            return Response(
+                {"error": "Dates must use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if end_date < start_date:
+            return Response(
+                {"error": "End date must not be before start date."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    else:
+        #
+        # Default to the current calendar year.
+        #
+        today = timezone.localdate()
+
+        start_date = date(today.year, 1, 1)
+        end_date = date(today.year, 12, 31)
+
+    #
+    # Convert the requested local dates into timezone-aware
+    # datetimes for querying visited_at.
+    #
+    current_timezone = timezone.get_current_timezone()
+
+    start_datetime = timezone.make_aware(
+        datetime.combine(start_date, time.min),
+        current_timezone,
+    )
+
+    end_datetime = timezone.make_aware(
+        datetime.combine(
+            end_date + timedelta(days=1),
+            time.min,
+        ),
+        current_timezone,
+    )
+
+    visits = (
+        Visit.objects
+        .filter(
+            visited_at__gte=start_datetime,
+            visited_at__lt=end_datetime,
+        )
+        .select_related("client")
+        .order_by("visited_at")
+    )
+
+    workbook = Workbook()
+
+    #
+    # Remove openpyxl's automatically-created sheet.
+    #
+    default_sheet = workbook.active
+    workbook.remove(default_sheet)
+
+    #
+    # Determine every calendar month represented by the
+    # requested date range.
+    #
+    month_cursor = date(
+        start_date.year,
+        start_date.month,
+        1,
+    )
+
+    month_keys = []
+
+    while month_cursor <= end_date:
+        month_keys.append(
+            (month_cursor.year, month_cursor.month)
+        )
+
+        if month_cursor.month == 12:
+            month_cursor = date(
+                month_cursor.year + 1,
+                1,
+                1,
+            )
+        else:
+            month_cursor = date(
+                month_cursor.year,
+                month_cursor.month + 1,
+                1,
+            )
+
+    #
+    # Create the sheets first.
+    #
+    sheets = {}
+
+    multiple_years = start_date.year != end_date.year
+
+    for sheet_year, sheet_month in month_keys:
+        month_name = date(
+            sheet_year,
+            sheet_month,
+            1,
+        ).strftime("%B")
+
+        if multiple_years:
+            sheet_name = f"{month_name} {sheet_year}"
+        else:
+            sheet_name = month_name
+
+        worksheet = workbook.create_sheet(
+            title=sheet_name
+        )
+
+        worksheet.append([
+            "Date of Birth",
+            "Name",
+            "Timestamp",
+        ])
+
+        for cell in worksheet[1]:
+            cell.font = Font(bold=True)
+
+        worksheet.column_dimensions["A"].width = 18
+        worksheet.column_dimensions["B"].width = 32
+        worksheet.column_dimensions["C"].width = 24
+
+        sheets[(sheet_year, sheet_month)] = worksheet
+
+    #
+    # Add visits to their corresponding month.
+    #
+    for visit in visits:
+        local_visit = timezone.localtime(
+            visit.visited_at
+        )
+
+        worksheet = sheets.get(
+            (
+                local_visit.year,
+                local_visit.month,
+            )
+        )
+
+        if not worksheet:
+            continue
+
+        worksheet.append([
+            visit.client.date_of_birth,
+            visit.client.full_name,
+            local_visit.replace(tzinfo=None),
+        ])
+
+        row_number = worksheet.max_row
+
+        worksheet.cell(
+            row=row_number,
+            column=1,
+        ).number_format = "mm/dd/yyyy"
+
+        worksheet.cell(
+            row=row_number,
+            column=3,
+        ).number_format = "mm/dd/yyyy h:mm AM/PM"
+
+    #
+    # Write workbook to memory.
+    #
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)
+
+    if year_param:
+        filename = f"sunrise-visits-{year}.xlsx"
+    else:
+        filename = (
+            f"sunrise-visits-"
+            f"{start_date.isoformat()}-"
+            f"{end_date.isoformat()}.xlsx"
+        )
+
+    response = HttpResponse(
+        output.getvalue(),
+        content_type=(
+            "application/"
+            "vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        ),
+    )
+
+    response["Content-Disposition"] = (
+        f'attachment; filename="{filename}"'
+    )
+
+    return response
