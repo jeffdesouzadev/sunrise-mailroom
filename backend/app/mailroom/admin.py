@@ -1,26 +1,13 @@
 from django.contrib import admin
-from .models import Package, Client, AuthorizedPickupPerson
+
+from .models import Client, Visit
 
 
-@admin.register(Package)
-class PackageAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "recipient_name",
-        "carrier",
-        "tracking_number",
-        "status",
-        "received_at",
-        "notified_at",
-        "picked_up_at",
-    )
-    search_fields = ("recipient_name", "tracking_number", "carrier")
-    list_filter = ("status", "carrier")
-
-
-class AuthorizedPickupPersonInline(admin.TabularInline):
-    model = AuthorizedPickupPerson
-    extra = 1
+class VisitInline(admin.TabularInline):
+    model = Visit
+    extra = 0
+    ordering = ("-visited_at",)
+    readonly_fields = ("visited_at",)
 
 
 @admin.register(Client)
@@ -28,18 +15,47 @@ class ClientAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "full_name",
-        "first_name",
-        "last_name",
         "date_of_birth",
-        "is_active",
-        "last_checked_in_at",
+        "latest_visit",
+        "visit_count",
     )
-    search_fields = ("full_name", "first_name", "last_name")
-    list_filter = ("is_active",)
-    inlines = [AuthorizedPickupPersonInline]
+
+    search_fields = (
+        "full_name",
+    )
+
+    list_filter = (
+        "date_of_birth",
+    )
+
+    inlines = [
+        VisitInline,
+    ]
+
+    def latest_visit(self, obj):
+        visit = obj.visits.first()
+        return visit.visited_at if visit else None
+
+    def visit_count(self, obj):
+        return obj.visits.count()
 
 
-@admin.register(AuthorizedPickupPerson)
-class AuthorizedPickupPersonAdmin(admin.ModelAdmin):
-    list_display = ("id", "full_name", "client", "relationship")
-    search_fields = ("full_name", "client__full_name", "relationship")
+@admin.register(Visit)
+class VisitAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "client",
+        "visited_at",
+    )
+
+    search_fields = (
+        "client__full_name",
+    )
+
+    list_filter = (
+        "visited_at",
+    )
+
+    ordering = (
+        "-visited_at",
+    )
