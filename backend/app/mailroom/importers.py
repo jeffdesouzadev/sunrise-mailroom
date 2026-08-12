@@ -36,7 +36,7 @@ def detect_workbook_format(workbook):
             len(headers) >= 3
             and headers[0] == "date of birth"
             and headers[1] == "name"
-            and headers[2] == "timestamp"
+            and headers[2].startswith("timestamp")
         ):
             return FORMAT_SUNRISE_EXPORT
 
