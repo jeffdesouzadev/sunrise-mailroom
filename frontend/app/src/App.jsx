@@ -394,7 +394,7 @@ function App() {
                 />
 
                 <p className="field-hint">
-                  Enter the client's birthday. No date picker needed.
+                  Enter the client's birthday. 
                 </p>
 
                 <div className="name-search">
