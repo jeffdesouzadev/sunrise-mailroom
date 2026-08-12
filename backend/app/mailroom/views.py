@@ -3,12 +3,11 @@ from django.shortcuts import get_object_or_404
 from datetime import date, datetime, time, timedelta
 from io import BytesIO
 from django.db import transaction
+from tzlocal import get_localzone, get_localzone_name
 from django.utils import timezone
-
 from .importers import parse_workbook
 
 from django.http import HttpResponse
-from django.utils import timezone
 from openpyxl import Workbook
 from openpyxl.styles import Font
 
@@ -149,6 +148,9 @@ def client_visit(request, pk):
 
 @api_view(["GET"])
 def export_visits(request):
+    local_timezone = get_localzone()
+    timezone_label = get_localzone_name()
+
     year_param = request.GET.get("year")
     start_param = request.GET.get("start")
     end_param = request.GET.get("end")
@@ -188,7 +190,7 @@ def export_visits(request):
         #
         # Default to the current calendar year.
         #
-        today = timezone.localdate()
+        today = datetime.now(local_timezone).date()
 
         start_date = date(today.year, 1, 1)
         end_date = date(today.year, 12, 31)
@@ -197,11 +199,11 @@ def export_visits(request):
     # Convert the requested local dates into timezone-aware
     # datetimes for querying visited_at.
     #
-    current_timezone = timezone.get_current_timezone()
 
+    
     start_datetime = timezone.make_aware(
         datetime.combine(start_date, time.min),
-        current_timezone,
+        local_timezone,
     )
 
     end_datetime = timezone.make_aware(
@@ -209,7 +211,7 @@ def export_visits(request):
             end_date + timedelta(days=1),
             time.min,
         ),
-        current_timezone,
+        local_timezone,
     )
 
     visits = (
@@ -283,10 +285,11 @@ def export_visits(request):
             title=sheet_name
         )
 
+        # timezone_label = str(current_timezone)
         worksheet.append([
             "Date of Birth",
             "Name",
-            "Timestamp",
+            f"Timestamp ({timezone_label})",
         ])
 
         for cell in worksheet[1]:
@@ -297,13 +300,13 @@ def export_visits(request):
         worksheet.column_dimensions["C"].width = 24
 
         sheets[(sheet_year, sheet_month)] = worksheet
-
+ 
     #
     # Add visits to their corresponding month.
     #
     for visit in visits:
-        local_visit = timezone.localtime(
-            visit.visited_at
+        local_visit = visit.visited_at.astimezone(
+            local_timezone
         )
 
         worksheet = sheets.get(
@@ -324,6 +327,29 @@ def export_visits(request):
                 microsecond=0,
             ),
         ])
+
+        # local_visit = timezone.localtime(
+        #     visit.visited_at
+        # )
+
+        # worksheet = sheets.get(
+        #     (
+        #         local_visit.year,
+        #         local_visit.month,
+        #     )
+        # )
+
+        # if not worksheet:
+        #     continue
+
+        # worksheet.append([
+        #     visit.client.date_of_birth,
+        #     visit.client.full_name,
+        #     local_visit.replace(
+        #         tzinfo=None,
+        #         microsecond=0,
+        #     ),
+        # ])
 
         row_number = worksheet.max_row
 
@@ -424,7 +450,8 @@ def import_visits(request):
     visits_created = 0
     duplicates_skipped = 0
 
-    current_timezone = timezone.get_current_timezone()
+    
+    local_timezone = get_localzone()
 
     with transaction.atomic():
         for record in valid_records:
@@ -432,18 +459,18 @@ def import_visits(request):
                 full_name=record["full_name"],
                 date_of_birth=record["date_of_birth"],
             )
-
             if created:
                 clients_created += 1
             else:
                 clients_existing += 1
 
+            
             visited_at = record["visited_at"]
 
             if timezone.is_naive(visited_at):
                 visited_at = timezone.make_aware(
                     visited_at,
-                    current_timezone,
+                    local_timezone,
                 )
 
             visit_second_start = visited_at.replace(
