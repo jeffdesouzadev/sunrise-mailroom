@@ -371,3 +371,113 @@
     flex-direction: column;
   }
 }
+
+.export-panel {
+  margin-top: 48px;
+  padding: 32px;
+  border: 1px solid #dfe5e0;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 28px rgba(33, 48, 39, 0.07);
+}
+
+.export-heading h2 {
+  margin: 0;
+  font-size: 26px;
+  color: #17221c;
+}
+
+.export-heading p {
+  margin: 8px 0 24px;
+  color: #657168;
+}
+
+.year-buttons {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.year-button {
+  min-height: 68px;
+  border: 2px solid #cad5cc;
+  border-radius: 12px;
+  background: #f7faf8;
+  color: #315b3f;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.year-button:hover {
+  border-color: #6d8f77;
+  background: #eef5f0;
+}
+
+.year-button.current-year {
+  border-color: #2f7046;
+  background: #2f7046;
+  color: #ffffff;
+}
+
+.year-button.current-year:hover {
+  background: #285f3b;
+}
+
+.custom-export {
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid #dfe5e0;
+}
+
+.custom-export h3 {
+  margin: 0 0 18px;
+  font-size: 18px;
+  color: #28352c;
+}
+
+.date-range-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.date-range-field input {
+  width: 100%;
+  min-height: 50px;
+  padding: 10px 12px;
+  border: 2px solid #cbd5cd;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #17221c;
+}
+
+.export-range-button {
+  min-height: 50px;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 10px;
+  background: #2f7046;
+  color: #ffffff;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.export-range-button:hover {
+  background: #285f3b;
+}
+
+@media (max-width: 700px) {
+  .year-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .date-range-form {
+    grid-template-columns: 1fr;
+  }
+
+  .export-range-button {
+    width: 100%;
+  }
+}
