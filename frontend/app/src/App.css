@@ -557,32 +557,61 @@
   color: #28352c;
 }
 
-
-.disabled-card {
-  position: relative;
-  opacity: 0.68;
+.import-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.coming-soon-badge {
-  display: inline-block;
-  margin-bottom: 14px;
-  padding: 5px 9px;
-  border-radius: 999px;
-  background: #e4e9e5;
-  color: #68736b;
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.import-file-input {
+  width: 100%;
+  padding: 14px;
+  border: 2px solid #cbd5cd;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #17221c;
+}
+
+.import-file-input:focus {
+  border-color: #38734c;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(56, 115, 76, 0.12);
 }
 
 .import-button {
   min-height: 52px;
   padding: 12px 20px;
-  border: 1px solid #c3ccc5;
+  border: 0;
   border-radius: 10px;
-  background: #e8ece9;
-  color: #7b857e;
+  background: #2f7046;
+  color: #ffffff;
   font-weight: 750;
-  cursor: not-allowed;
+  cursor: pointer;
+}
+
+.import-button:hover:not(:disabled) {
+  background: #285f3b;
+}
+
+.import-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.import-result {
+  margin-top: 22px;
+  padding: 18px 20px;
+  border: 1px solid #bed5c4;
+  border-radius: 12px;
+  background: #f2f8f4;
+}
+
+.import-result h4 {
+  margin: 0 0 12px;
+  color: #1c3926;
+}
+
+.import-result p {
+  margin: 5px 0;
+  color: #536158;
 }

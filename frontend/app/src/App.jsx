@@ -87,27 +87,25 @@ function formatVisit(value) {
 function App() {
   const [dob, setDob] = useState("");
   const [name, setName] = useState("");
-
   const [clients, setClients] = useState([]);
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
   const [showNewClient, setShowNewClient] = useState(false);
   const [newClientName, setNewClientName] = useState("");
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
   const [page, setPage] = useState("checkin");
-
 
   const exportYears = Array.from(
     { length: 5 },
     (_, index) => currentYear - index
   );
-
   const [exportStart, setExportStart] = useState("");
   const [exportEnd, setExportEnd] = useState("");
 
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   async function searchClients(event) {
     event?.preventDefault();
@@ -200,6 +198,59 @@ function App() {
       `?start=${encodeURIComponent(exportStart)}` +
       `&end=${encodeURIComponent(exportEnd)}`;
   }
+
+  async function importVisitLog(event) {
+  event.preventDefault();
+
+  if (!importFile) {
+    setError("Choose an Excel file to import.");
+    return;
+  }
+
+  setImporting(true);
+  setError("");
+  setImportResult(null);
+
+  try {
+    const formData = new FormData();
+    formData.append("file", importFile);
+
+    const response = await fetch(
+      `${API_BASE}/import/visits/`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || "Import failed."
+      );
+    }
+
+    setImportResult(data);
+    setImportFile(null);
+
+    const fileInput = document.getElementById(
+      "visit-import-file"
+    );
+
+    if (fileInput) {
+      fileInput.value = "";
+    }
+  } catch (err) {
+    console.error(err);
+
+    setError(
+      err.message || "Unable to import the Excel file."
+    );
+  } finally {
+    setImporting(false);
+  }
+}
 
   async function recordVisit(client) {
     setLoading(true);
@@ -664,26 +715,83 @@ function App() {
                   </form>
                 </div>
               </section>
-
-              <section className="data-action-card disabled-card">
-                <div className="coming-soon-badge">
-                  Coming soon
-                </div>
-
+              <section className="data-action-card">
                 <h3>Import Visit Log</h3>
 
                 <p>
-                  Import existing spreadsheet records into
-                  Sunrise Mailroom.
+                  Import visit records from a Sunrise Mailroom Excel workbook.
+                  Existing visits will be skipped automatically.
                 </p>
 
-                <button
-                  type="button"
-                  className="import-button"
-                  disabled
+                <form
+                  className="import-form"
+                  onSubmit={importVisitLog}
                 >
-                  Import Excel File
-                </button>
+                  <label
+                    className="field-label"
+                    htmlFor="visit-import-file"
+                  >
+                    Excel workbook
+                  </label>
+
+                  <input
+                    id="visit-import-file"
+                    className="import-file-input"
+                    type="file"
+                    accept=".xlsx"
+                    onChange={(event) => {
+                      setImportFile(
+                        event.target.files?.[0] || null
+                      );
+
+                      setImportResult(null);
+                      setError("");
+                    }}
+                  />
+
+                  <button
+                    type="submit"
+                    className="import-button"
+                    disabled={!importFile || importing}
+                  >
+                    {importing
+                      ? "Importing..."
+                      : "Import Visit Log"}
+                  </button>
+                </form>
+
+                {importResult && (
+                  <div className="import-result">
+                    <h4>Import complete</h4>
+
+                    <p>
+                      Rows read:{" "}
+                      <strong>{importResult.rows_read}</strong>
+                    </p>
+
+                    <p>
+                      Visits added:{" "}
+                      <strong>{importResult.visits_created}</strong>
+                    </p>
+
+                    <p>
+                      Existing visits skipped:{" "}
+                      <strong>
+                        {importResult.duplicates_skipped}
+                      </strong>
+                    </p>
+
+                    <p>
+                      New clients:{" "}
+                      <strong>{importResult.clients_created}</strong>
+                    </p>
+
+                    <p>
+                      Invalid rows:{" "}
+                      <strong>{importResult.invalid_rows}</strong>
+                    </p>
+                  </div>
+                )}
               </section>
             </div>
 
