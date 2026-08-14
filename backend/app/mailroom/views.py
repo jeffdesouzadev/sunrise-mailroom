@@ -3,7 +3,8 @@ from django.shortcuts import get_object_or_404
 from datetime import date, datetime, time, timedelta
 from io import BytesIO
 from django.db import transaction
-from tzlocal import get_localzone, get_localzone_name
+# from .system_timezone import get_system_timezone
+from .system_timezone import get_mailroom_timezone
 from django.utils import timezone
 from .importers import parse_workbook
 
@@ -147,9 +148,8 @@ def client_visit(request, pk):
     )
 
 @api_view(["GET"])
-def export_visits(request):
-    local_timezone = get_localzone()
-    timezone_label = get_localzone_name()
+def export_visits(request):    
+    local_timezone, timezone_label = get_mailroom_timezone()
 
     year_param = request.GET.get("year")
     start_param = request.GET.get("start")
@@ -451,7 +451,7 @@ def import_visits(request):
     duplicates_skipped = 0
 
     
-    local_timezone = get_localzone()
+    local_timezone, _ = get_mailroom_timezone()
 
     with transaction.atomic():
         for record in valid_records:
