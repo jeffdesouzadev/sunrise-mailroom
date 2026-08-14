@@ -12,10 +12,41 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+FRONTEND_DIST_DIR = BASE_DIR.parent.parent / "frontend" / "app" / "dist"
 
+IS_FROZEN = getattr(sys, "frozen", False)
+
+if IS_FROZEN:
+    app_data_root = Path(
+        os.getenv(
+            "LOCALAPPDATA",
+            Path.home() / "AppData" / "Local",
+        )
+    )
+
+    APP_DATA_DIR = app_data_root / "SunriseMailroom"
+
+    APP_DATA_DIR.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    DATABASE_PATH = APP_DATA_DIR / "db.sqlite3"
+
+else:
+    DATABASE_PATH = BASE_DIR / "db.sqlite3"
+
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": DATABASE_PATH,
+    }
+}
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -65,7 +96,9 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            FRONTEND_DIST_DIR,
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -78,17 +111,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
-
-
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 
 
 # Password validation
@@ -198,7 +220,10 @@ SUNRISE_LOCAL_TIMEZONE = (os.getenv("SUNRISE_LOCAL_TIMEZONE", "").strip())
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    FRONTEND_DIST_DIR / "assets",
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
