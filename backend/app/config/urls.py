@@ -22,7 +22,11 @@ from mailroom.frontend_views import (
 
 
 urlpatterns = [
-    path("", home, name="home"),
+    path(
+        "",
+        frontend_index,
+        name="frontend",
+    ),
     path("admin/", admin.site.urls),
     path("api/health/", health_check, name="health-check"),
     path("api/clients/", client_list, name="client-list"),
@@ -49,5 +53,10 @@ urlpatterns = [
         "",
         frontend_index,
         name="frontend",
+    ),
+    path(
+        "assets/<path:path>",
+        frontend_asset,
+        name="frontend-asset",
     ),
 ]
