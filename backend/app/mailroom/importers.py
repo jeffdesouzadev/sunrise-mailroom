@@ -1,6 +1,7 @@
 from datetime import datetime
-
 from openpyxl import load_workbook
+import re
+from zoneinfo import ZoneInfo
 
 
 FORMAT_SUNRISE_EXPORT = "sunrise_export"
@@ -14,6 +15,35 @@ def normalize_header(value):
 
     return str(value).strip().lower()
 
+def extract_timezone_from_header(value):
+    """
+    Read a timezone from a Sunrise export header such as:
+
+        Timestamp (America/Chicago)
+
+    Returns the IANA timezone name, or None if the header
+    does not contain a valid timezone.
+    """
+    if not value:
+        return None
+
+    match = re.match(
+        r"^timestamp\s*\(([^)]+)\)$",
+        str(value).strip(),
+        re.IGNORECASE,
+    )
+
+    if not match:
+        return None
+
+    timezone_name = match.group(1).strip()
+
+    try:
+        ZoneInfo(timezone_name)
+    except Exception:
+        return None
+
+    return timezone_name
 
 def detect_workbook_format(workbook):
     """
@@ -107,6 +137,19 @@ def parse_sunrise_export(workbook):
     records = []
 
     for worksheet in workbook.worksheets:
+        timezone_name = None
+
+        if worksheet.max_row >= 1:
+            headers = [
+                cell.value
+                for cell in worksheet[1]
+            ]
+
+            if len(headers) >= 3:
+                timezone_name = extract_timezone_from_header(
+                    headers[2]
+                )
+
         for row_number, row in enumerate(
             worksheet.iter_rows(
                 min_row=2,
@@ -135,7 +178,10 @@ def parse_sunrise_export(workbook):
                     "valid": False,
                     "sheet": worksheet.title,
                     "row": row_number,
-                    "reason": "Missing or invalid name, date of birth, or timestamp.",
+                    "reason": (
+                        "Missing or invalid name, date of birth, "
+                        "or timestamp."
+                    ),
                 })
                 continue
 
@@ -146,10 +192,10 @@ def parse_sunrise_export(workbook):
                 "full_name": full_name,
                 "date_of_birth": date_of_birth,
                 "visited_at": visited_at,
+                "timezone_name": timezone_name,
             })
 
     return records
-
 
 def parse_workbook(uploaded_file):
     workbook = load_workbook(

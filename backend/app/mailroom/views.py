@@ -12,6 +12,7 @@ from django.http import HttpResponse
 from openpyxl import Workbook
 from openpyxl.styles import Font
 
+from zoneinfo import ZoneInfo
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -468,9 +469,16 @@ def import_visits(request):
             visited_at = record["visited_at"]
 
             if timezone.is_naive(visited_at):
+                record_timezone_name = record.get("timezone_name")
+
+                if record_timezone_name:
+                    record_timezone = ZoneInfo(record_timezone_name)
+                else:
+                    record_timezone = local_timezone
+
                 visited_at = timezone.make_aware(
                     visited_at,
-                    local_timezone,
+                    record_timezone,
                 )
 
             visit_second_start = visited_at.replace(
