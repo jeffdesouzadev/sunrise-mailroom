@@ -16,9 +16,24 @@ import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-FRONTEND_DIST_DIR = BASE_DIR.parent.parent / "frontend" / "app" / "dist"
-
 IS_FROZEN = getattr(sys, "frozen", False)
+
+if IS_FROZEN:
+    BUNDLE_DIR = Path(sys._MEIPASS)
+
+    FRONTEND_DIST_DIR = (
+        BUNDLE_DIR
+        / "frontend"
+        / "dist"
+    )
+else:
+    FRONTEND_DIST_DIR = (
+        BASE_DIR.parent.parent
+        / "frontend"
+        / "app"
+        / "dist"
+    )
+
 
 if IS_FROZEN:
     app_data_root = Path(
