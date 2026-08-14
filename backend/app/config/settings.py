@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from tzlocal import get_localzone_name
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -120,6 +122,79 @@ USE_I18N = True
 
 USE_TZ = True
 
+
+# Common U.S. timezone overrides:
+
+# ============================================================
+# TIMEZONE OVERRIDES
+# ============================================================
+
+# Comment out the line below if automatic timezone detection is unavailable.
+SUNRISE_LOCAL_TIMEZONE = (os.getenv("SUNRISE_LOCAL_TIMEZONE", "").strip())
+
+# Common U.S. timezones:
+# SUNRISE_LOCAL_TIMEZONE = "Pacific/Honolulu"       # Hawaii
+# SUNRISE_LOCAL_TIMEZONE = "America/Anchorage"     # Alaska
+# SUNRISE_LOCAL_TIMEZONE = "America/Los_Angeles"   # Pacific
+# SUNRISE_LOCAL_TIMEZONE = "America/Denver"        # Mountain
+# SUNRISE_LOCAL_TIMEZONE = "America/Chicago"       # Central
+# SUNRISE_LOCAL_TIMEZONE = "America/New_York"      # Eastern
+#
+# Uncomment ONE if automatic timezone detection is unavailable.
+# UTC-12
+# SUNRISE_LOCAL_TIMEZONE = "Etc/GMT+12"
+# UTC-11
+# SUNRISE_LOCAL_TIMEZONE = "Pacific/Pago_Pago"
+# UTC-10 - Hawaii
+# SUNRISE_LOCAL_TIMEZONE = "Pacific/Honolulu"
+# UTC-9 - Alaska
+# SUNRISE_LOCAL_TIMEZONE = "America/Anchorage"
+# UTC-8 - Pacific
+# SUNRISE_LOCAL_TIMEZONE = "America/Los_Angeles"
+# UTC-7 - Mountain
+# SUNRISE_LOCAL_TIMEZONE = "America/Denver"
+# UTC-6 - Central
+# SUNRISE_LOCAL_TIMEZONE = "America/Chicago"
+# UTC-5 - Eastern
+# SUNRISE_LOCAL_TIMEZONE = "America/New_York"
+# UTC-4 - Atlantic
+# SUNRISE_LOCAL_TIMEZONE = "America/Halifax"
+# UTC-3
+# SUNRISE_LOCAL_TIMEZONE = "America/Argentina/Buenos_Aires"
+# UTC-2
+# SUNRISE_LOCAL_TIMEZONE = "America/Noronha"
+# UTC-1
+# SUNRISE_LOCAL_TIMEZONE = "Atlantic/Azores"
+# UTC+0
+# SUNRISE_LOCAL_TIMEZONE = "Etc/UTC"
+# UTC+1 - Central European
+# SUNRISE_LOCAL_TIMEZONE = "Europe/Paris"
+# UTC+2 - Eastern European
+# SUNRISE_LOCAL_TIMEZONE = "Europe/Athens"
+# UTC+3
+# SUNRISE_LOCAL_TIMEZONE = "Europe/Moscow"
+# UTC+4
+# SUNRISE_LOCAL_TIMEZONE = "Asia/Dubai"
+# UTC+5
+# SUNRISE_LOCAL_TIMEZONE = "Asia/Karachi"
+# UTC+6
+# SUNRISE_LOCAL_TIMEZONE = "Asia/Dhaka"
+# UTC+7
+# SUNRISE_LOCAL_TIMEZONE = "Asia/Bangkok"
+# UTC+8
+# SUNRISE_LOCAL_TIMEZONE = "Asia/Singapore"
+# UTC+9
+# SUNRISE_LOCAL_TIMEZONE = "Asia/Tokyo"
+# UTC+10
+# SUNRISE_LOCAL_TIMEZONE = "Australia/Brisbane"
+# UTC+11
+# SUNRISE_LOCAL_TIMEZONE = "Pacific/Guadalcanal"
+# UTC+12
+# SUNRISE_LOCAL_TIMEZONE = "Pacific/Auckland"
+# UTC+13
+# SUNRISE_LOCAL_TIMEZONE = "Pacific/Apia"
+# UTC+14
+# SUNRISE_LOCAL_TIMEZONE = "Pacific/Kiritimati"
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
