@@ -15,13 +15,16 @@ from mailroom.views import (
     client_visit,
 )
 
+from mailroom.frontend_views import (
+    frontend_index,
+    frontend_asset,
+)
+
 
 urlpatterns = [
     path("", home, name="home"),
     path("admin/", admin.site.urls),
-
     path("api/health/", health_check, name="health-check"),
-
     path("api/clients/", client_list, name="client-list"),
     path("api/clients/<int:pk>/", client_detail, name="client-detail"),
     path(
@@ -36,5 +39,15 @@ urlpatterns = [
     path(
         "api/import/visits/",
         import_visits,
+    ),
+    path(
+        "assets/<path:path>",
+        frontend_asset,
+        name="frontend-asset",
+    ),
+    path(
+        "",
+        frontend_index,
+        name="frontend",
     ),
 ]
