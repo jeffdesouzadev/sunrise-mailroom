@@ -105,17 +105,17 @@ Search instead treats the entered name as a set of tokens.
 For example, a client stored as:
 
 ```text
-Juan Carlos De La Cruz
+Sean Patrick O Connor Murphy
 ```
 
 can be found with searches such as:
 
 ```text
-Juan
-Juan Cruz
-Cruz Juan
-Carlos Cruz
-De La Cruz
+Sean
+Sean Murphy
+Murphy Sean
+Patrick Murphy
+O Connor Murphy
 ```
 
 The date of birth is normally used first to dramatically reduce the number of potential matches.
@@ -474,7 +474,7 @@ Name
 
 Possible Matches
 
-Juan Carlos De La Cruz
+Haruto Kenji Kanamura Sato Ito
 DOB: May 10, 1985
 Last visit: August 8
 12 visits
@@ -605,3 +605,8 @@ If not, it probably does not belong in the application yet.
 The goal is not to build the most sophisticated mailroom management system possible.
 
 The goal is to make the existing Sunrise mailroom workflow **faster, easier, and more reliable**.
+
+## Authors
+Jose F (Jeff) DeSouza
+
+Govind 
