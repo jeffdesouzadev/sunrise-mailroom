@@ -9,13 +9,13 @@ const currentYear = new Date().getFullYear();
 function normalizeDob(value) {
   const cleaned = value.trim();
 
-  // Already YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(cleaned)) {
     return cleaned;
   }
 
-  // MM/DD/YYYY
-  const match = cleaned.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const match = cleaned.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
+  );
 
   if (!match) {
     return null;
@@ -26,14 +26,18 @@ function normalizeDob(value) {
   return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }
 
+
 function calculateAge(dateOfBirth) {
   if (!dateOfBirth) {
     return null;
   }
 
-  const [year, month, day] = dateOfBirth.split("-").map(Number);
+  const [year, month, day] = dateOfBirth
+    .split("-")
+    .map(Number);
 
   const today = new Date();
+
   let age = today.getFullYear() - year;
 
   const birthdayThisYear = new Date(
@@ -49,8 +53,11 @@ function calculateAge(dateOfBirth) {
   return age;
 }
 
+
 function formatDobInput(value) {
-  const digits = value.replace(/\D/g, "").slice(0, 8);
+  const digits = value
+    .replace(/\D/g, "")
+    .slice(0, 8);
 
   if (digits.length <= 2) {
     return digits;
@@ -60,20 +67,32 @@ function formatDobInput(value) {
     return `${digits.slice(0, 2)}/${digits.slice(2)}`;
   }
 
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+  return (
+    `${digits.slice(0, 2)}/` +
+    `${digits.slice(2, 4)}/` +
+    `${digits.slice(4)}`
+  );
 }
 
+
 function formatDob(value) {
-  if (!value) return "";
+  if (!value) {
+    return "";
+  }
 
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const match = value.match(
+    /^(\d{4})-(\d{2})-(\d{2})$/
+  );
 
-  if (!match) return value;
+  if (!match) {
+    return value;
+  }
 
   const [, year, month, day] = match;
 
   return `${month}/${day}/${year}`;
 }
+
 
 function formatVisit(value) {
   if (!value) {
@@ -84,6 +103,7 @@ function formatVisit(value) {
 
   return date.toLocaleString();
 }
+
 
 function App() {
   const [dob, setDob] = useState("");
@@ -101,7 +121,10 @@ function App() {
     { length: 5 },
     (_, index) => currentYear - index
   );
-  const [exportYearValue, setExportYearValue] = useState(currentYear);
+
+  const [exportYearValue, setExportYearValue] =
+    useState(currentYear);
+
   const [exportStart, setExportStart] = useState("");
   const [exportEnd, setExportEnd] = useState("");
   const [exportFormat, setExportFormat] = useState("csv");
@@ -109,6 +132,7 @@ function App() {
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
+
 
   async function searchClients(event) {
     event?.preventDefault();
@@ -119,20 +143,24 @@ function App() {
 
     const enteredDob = dob.trim();
     const enteredName = name.trim();
-    
 
     if (!enteredDob && !enteredName) {
-      setError("Enter a date of birth or a name.");
+      setError(
+        "Enter a date of birth or a name."
+      );
       return;
     }
 
     const params = new URLSearchParams();
 
     if (enteredDob) {
-      const normalizedDob = normalizeDob(enteredDob);
+      const normalizedDob =
+        normalizeDob(enteredDob);
 
       if (!normalizedDob) {
-        setError("Enter the date of birth as MM/DD/YYYY.");
+        setError(
+          "Enter the date of birth as MM/DD/YYYY."
+        );
         return;
       }
 
@@ -151,7 +179,9 @@ function App() {
       );
 
       if (!response.ok) {
-        throw new Error("Client search failed.");
+        throw new Error(
+          "Client search failed."
+        );
       }
 
       const data = await response.json();
@@ -160,16 +190,16 @@ function App() {
 
       if (data.length === 0) {
         setShowNewClient(true);
-
-        if (enteredName) {
-          setNewClientName(enteredName);
-        }
+        setNewClientName(enteredName);
       } else {
         setShowNewClient(false);
       }
     } catch (err) {
       console.error(err);
-      setError("Unable to search for clients.");
+
+      setError(
+        "Unable to search for clients."
+      );
     } finally {
       setLoading(false);
     }
@@ -183,80 +213,95 @@ function App() {
       `&export_format=${exportFormat}`;
   }
 
+
   function exportDateRange(event) {
     event.preventDefault();
 
     if (!exportStart || !exportEnd) {
-      setError("Choose both a start and end date.");
+      setError(
+        "Choose both a start and end date."
+      );
       return;
     }
 
     if (exportEnd < exportStart) {
-      setError("The export end date must come after the start date.");
+      setError(
+        "The export end date must come after the start date."
+      );
       return;
     }
 
     setError("");
 
     window.location.href =
-    `${API_BASE}/export/visits/` +
-    `?start=${encodeURIComponent(exportStart)}` +
-    `&end=${encodeURIComponent(exportEnd)}` +
-    `&export_format=${exportFormat}`;
+      `${API_BASE}/export/visits/` +
+      `?start=${encodeURIComponent(exportStart)}` +
+      `&end=${encodeURIComponent(exportEnd)}` +
+      `&export_format=${exportFormat}`;
   }
+
 
   async function importVisitLog(event) {
-  event.preventDefault();
+    event.preventDefault();
 
-  if (!importFile) {
-    setError("Choose a CSV or Excel file to import.");
-    return;
-  }
-
-  setImporting(true);
-  setError("");
-  setImportResult(null);
-
-  try {
-    const formData = new FormData();
-    formData.append("file", importFile);
-
-    const response = await fetch(
-      `${API_BASE}/import/visits/`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data.error || "Import failed."
+    if (!importFile) {
+      setError(
+        "Choose a CSV or Excel file to import."
       );
+      return;
     }
 
-    setImportResult(data);
-    setImportFile(null);
+    setImporting(true);
+    setError("");
+    setImportResult(null);
 
-    const fileInput = document.getElementById(
-      "visit-import-file"
-    );
+    try {
+      const formData = new FormData();
 
-    if (fileInput) {
-      fileInput.value = "";
+      formData.append(
+        "file",
+        importFile
+      );
+
+      const response = await fetch(
+        `${API_BASE}/import/visits/`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || "Import failed."
+        );
+      }
+
+      setImportResult(data);
+      setImportFile(null);
+
+      const fileInput =
+        document.getElementById(
+          "visit-import-file"
+        );
+
+      if (fileInput) {
+        fileInput.value = "";
+      }
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        err.message ||
+          "Unable to import the file."
+      );
+    } finally {
+      setImporting(false);
     }
-  } catch (err) {
-    console.error(err);
-
-    setError(
-      err.message || "Unable to import the file."
-    );
-  } finally {
-    setImporting(false);
   }
-}
+
 
   async function recordVisit(client) {
     setLoading(true);
@@ -271,7 +316,9 @@ function App() {
       );
 
       if (!response.ok) {
-        throw new Error("Visit could not be recorded.");
+        throw new Error(
+          "Visit could not be recorded."
+        );
       }
 
       const visit = await response.json();
@@ -285,21 +332,28 @@ function App() {
       setShowNewClient(false);
     } catch (err) {
       console.error(err);
-      setError("Unable to record this visit.");
+
+      setError(
+        "Unable to record this visit."
+      );
     } finally {
       setLoading(false);
     }
   }
+
 
   async function createClient(event) {
     event.preventDefault();
 
     setError("");
 
-    const normalizedDob = normalizeDob(dob);
+    const normalizedDob =
+      normalizeDob(dob);
 
     if (!newClientName.trim()) {
-      setError("Enter the person's full name.");
+      setError(
+        "Enter the person's full name."
+      );
       return;
     }
 
@@ -313,32 +367,51 @@ function App() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/clients/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          full_name: newClientName.trim(),
-          date_of_birth: normalizedDob,
-        }),
-      });
+      const response = await fetch(
+        `${API_BASE}/clients/`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            full_name:
+              newClientName.trim(),
+
+            date_of_birth:
+              normalizedDob,
+          }),
+        }
+      );
 
       if (!response.ok) {
-        const details = await response.json();
+        const details =
+          await response.json();
+
         console.error(details);
-        throw new Error("Client creation failed.");
+
+        throw new Error(
+          "Client creation failed."
+        );
       }
 
-      const client = await response.json();
+      const client =
+        await response.json();
 
       await recordVisit(client);
     } catch (err) {
       console.error(err);
-      setError("Unable to add this person.");
+
+      setError(
+        "Unable to add this person."
+      );
+
       setLoading(false);
     }
   }
+
 
   function resetForm() {
     setDob("");
@@ -350,20 +423,27 @@ function App() {
     setNewClientName("");
   }
 
+
   if (success) {
-      
     return (
       <main className="app-shell">
         <div className="mailroom-card">
           <header className="app-header">
             <h1>Sunrise Mailroom</h1>
-            <p>Client visit check-in</p>
+
+            <p>
+              Client visit check-in
+            </p>
           </header>
 
           <section className="success-panel">
-            <div className="success-icon">✓</div>
+            <div className="success-icon">
+              ✓
+            </div>
 
-            <h2>Visit recorded</h2>
+            <h2>
+              Visit recorded
+            </h2>
 
             <p className="success-name">
               {success.client.full_name}
@@ -371,7 +451,8 @@ function App() {
 
             <p className="success-time">
               {formatVisit(
-                success.visit.visited_at || new Date().toISOString()
+                success.visit.visited_at ||
+                  new Date().toISOString()
               )}
             </p>
 
@@ -379,7 +460,9 @@ function App() {
               className="pickup-button"
               type="button"
               onClick={resetForm}
-              style={{ marginTop: "32px" }}
+              style={{
+                marginTop: "32px",
+              }}
             >
               Next Person
             </button>
@@ -389,11 +472,14 @@ function App() {
     );
   }
 
+
   return (
     <main className="app-shell">
       <div className="mailroom-card">
         <header className="app-header">
-          <h1>Sunrise Mailroom</h1>
+          <h1>
+            Sunrise Mailroom
+          </h1>
 
           <p>
             {page === "checkin"
@@ -428,11 +514,29 @@ function App() {
           </div>
         </header>
 
+
         {page === "checkin" && (
-          <>
+          <div className="checkin-grid">
+
             <section className="search-panel">
-              <form onSubmit={searchClients}>
-                <label className="field-label" htmlFor="dob">
+              <div className="panel-heading">
+                <h2>
+                  Find a person
+                </h2>
+
+                <p>
+                  Search by birthday, name,
+                  or both.
+                </p>
+              </div>
+
+              <form
+                onSubmit={searchClients}
+              >
+                <label
+                  className="field-label"
+                  htmlFor="dob"
+                >
                   Date of birth
                 </label>
 
@@ -445,17 +549,24 @@ function App() {
                   placeholder="MM/DD/YYYY"
                   value={dob}
                   onChange={(event) => {
-                    setDob(formatDobInput(event.target.value));
+                    setDob(
+                      formatDobInput(
+                        event.target.value
+                      )
+                    );
                   }}
                   autoFocus
                 />
 
                 <p className="field-hint">
-                  Enter the client's birthday. 
+                  Enter the client's birthday.
                 </p>
 
                 <div className="name-search">
-                  <label className="field-label" htmlFor="name">
+                  <label
+                    className="field-label"
+                    htmlFor="name"
+                  >
                     Name lookup
                   </label>
 
@@ -466,12 +577,18 @@ function App() {
                     autoComplete="off"
                     placeholder="Full or partial name"
                     value={name}
-                    onChange={(event) => setName(event.target.value)}
+                    onChange={(event) =>
+                      setName(
+                        event.target.value
+                      )
+                    }
                   />
 
                   <p className="field-hint">
-                    Optional — use this if the birthday is unavailable,
-                    or combine it with the birthday to narrow the results.
+                    Optional — use this if
+                    the birthday is unavailable,
+                    or combine it with the
+                    birthday to narrow the results.
                   </p>
                 </div>
 
@@ -484,7 +601,9 @@ function App() {
                     marginTop: "28px",
                   }}
                 >
-                  {loading ? "Searching..." : "Find Person"}
+                  {loading
+                    ? "Searching..."
+                    : "Find Person"}
                 </button>
               </form>
 
@@ -495,162 +614,237 @@ function App() {
               )}
             </section>
 
-            {clients.length > 0 && (
-              <section className="results-section">
-                <p className="results-heading">
-                  {clients.length === 1
-                    ? "1 matching person"
-                    : `${clients.length} matching people`}
-                </p>
 
-                {clients.map((client) => (
-                  <article className="client-card" key={client.id}>
-                    <div className="client-details">
-                      <h2>{client.full_name}</h2>
+            <section
+              className="results-panel"
+              aria-live="polite"
+            >
+              <div className="results-panel-header">
+                <div>
+                  <h2>
+                    Search results
+                  </h2>
 
-                      <p>
-                        Date of birth:{" "}
-                        <strong>
-                          {formatDob(client.date_of_birth)}
-                        </strong>
-                      </p>
-
-                      <p>
-                        Age:{" "}
-                        <strong>
-                          {calculateAge(client.date_of_birth)}
-                        </strong>
-                      </p>
-
-                      <p className="visit-summary">
-                        Latest visit:{" "}
-                        <strong>
-                          {formatVisit(client.last_visit_at)}
-                        </strong>
-                      </p>
-
-                      <p>
-                        Visits:{" "}
-                        <strong>
-                          {client.visit_count ?? 0}
-                        </strong>
-                      </p>
-                    </div>
-
-                    <button
-                      className="pickup-button"
-                      type="button"
-                      disabled={loading}
-                      onClick={() => recordVisit(client)}
-                    >
-                      Record Visit
-                    </button>
-                  </article>
-                ))}
-              </section>
-            )}
-
-            {showNewClient && (
-              <>
-                <div className="empty-message">
-                  {clients.length === 0
-                    ? "No matching person was found."
-                    : "Add a new person instead."}
+                  <p>
+                    Matching people will
+                    appear here.
+                  </p>
                 </div>
 
-                <form
-                  className="new-client-form"
-                  onSubmit={createClient}
-                >
-                  <h2>Add new person</h2>
+                {clients.length > 0 && (
+                  <div className="results-count">
+                    {clients.length === 1
+                      ? "1 match"
+                      : `${clients.length} matches`}
+                  </div>
+                )}
+              </div>
 
-                  <label
-                    className="field-label"
-                    htmlFor="new-client-name"
+
+              {clients.length === 0 &&
+                !showNewClient && (
+                  <div className="results-placeholder">
+                    <div className="results-placeholder-mark">
+                      →
+                    </div>
+
+                    <h3>
+                      Results will appear here
+                    </h3>
+
+                    <p>
+                      Enter a date of birth or
+                      name on the left, then
+                      choose Find Person.
+                    </p>
+                  </div>
+                )}
+
+
+              {clients.length > 0 && (
+                <div className="results-list">
+                  {clients.map((client) => (
+                    <article
+                      className="client-card"
+                      key={client.id}
+                    >
+                      <div className="client-details">
+                        <h2>
+                          {client.full_name}
+                        </h2>
+
+                        <p>
+                          Date of birth:{" "}
+                          <strong>
+                            {formatDob(
+                              client.date_of_birth
+                            )}
+                          </strong>
+                        </p>
+
+                        <p>
+                          Age:{" "}
+                          <strong>
+                            {calculateAge(
+                              client.date_of_birth
+                            )}
+                          </strong>
+                        </p>
+
+                        <p className="visit-summary">
+                          Latest visit:{" "}
+                          <strong>
+                            {formatVisit(
+                              client.last_visit_at
+                            )}
+                          </strong>
+                        </p>
+
+                        <p>
+                          Visits:{" "}
+                          <strong>
+                            {client.visit_count ?? 0}
+                          </strong>
+                        </p>
+                      </div>
+
+                      <button
+                        className="pickup-button"
+                        type="button"
+                        disabled={loading}
+                        onClick={() =>
+                          recordVisit(client)
+                        }
+                      >
+                        Record Visit
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              )}
+
+
+              {showNewClient && (
+                <>
+                  <div className="empty-message">
+                    {clients.length === 0
+                      ? "No matching person was found."
+                      : "Add a new person instead."}
+                  </div>
+
+                  <form
+                    className="new-client-form"
+                    onSubmit={createClient}
                   >
-                    Full name
-                  </label>
+                    <h2>
+                      Add new person
+                    </h2>
 
-                  <input
-                    id="new-client-name"
-                    className="name-input"
-                    type="text"
-                    value={newClientName}
-                    onChange={(event) =>
-                      setNewClientName(event.target.value)
-                    }
-                    placeholder="Full name"
-                  />
-
-                  <div className="new-client-dob">
-                    Date of birth:{" "}
-                    <strong>
-                      {dob || "Not entered"}
-                    </strong>
-                  </div>
-
-                  <div className="form-actions">
-                    <button
-                      className="save-person-button"
-                      type="submit"
-                      disabled={loading}
+                    <label
+                      className="field-label"
+                      htmlFor="new-client-name"
                     >
-                      {loading
-                        ? "Saving..."
-                        : "Add Person & Record Visit"}
-                    </button>
+                      Full name
+                    </label>
 
-                    <button
-                      className="cancel-button"
-                      type="button"
-                      disabled={loading}
-                      onClick={() => {
-                        setShowNewClient(false);
-                        setNewClientName("");
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </>
-            )}
+                    <input
+                      id="new-client-name"
+                      className="name-input"
+                      type="text"
+                      value={newClientName}
+                      onChange={(event) =>
+                        setNewClientName(
+                          event.target.value
+                        )
+                      }
+                      placeholder="Full name"
+                    />
 
-            {clients.length > 0 && !showNewClient && (
-              <button
-                className="add-person-button"
-                type="button"
-                onClick={() => {
-                  setShowNewClient(true);
+                    <div className="new-client-dob">
+                      Date of birth:{" "}
+                      <strong>
+                        {dob || "Not entered"}
+                      </strong>
+                    </div>
 
-                  if (name.trim()) {
-                    setNewClientName(name.trim());
-                  }
-                }}
-              >
-                None of these people — add new person
-              </button>
-            )}
-          </>
+                    <div className="form-actions">
+                      <button
+                        className="save-person-button"
+                        type="submit"
+                        disabled={loading}
+                      >
+                        {loading
+                          ? "Saving..."
+                          : "Add Person & Record Visit"}
+                      </button>
+
+                      <button
+                        className="cancel-button"
+                        type="button"
+                        disabled={loading}
+                        onClick={() => {
+                          setShowNewClient(false);
+                          setNewClientName("");
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
+
+
+              {clients.length > 0 &&
+                !showNewClient && (
+                  <button
+                    className="add-person-button"
+                    type="button"
+                    onClick={() => {
+                      setShowNewClient(true);
+
+                      if (name.trim()) {
+                        setNewClientName(
+                          name.trim()
+                        );
+                      }
+                    }}
+                  >
+                    None of these people —
+                    add new person
+                  </button>
+                )}
+            </section>
+          </div>
         )}
+
 
         {page === "data" && (
           <section className="data-panel">
             <div className="data-heading">
-              <h2>Data Management</h2>
+              <h2>
+                Data Management
+              </h2>
+
               <p>
-                Export visit records or import historical data.
+                Export visit records or
+                import historical data.
               </p>
             </div>
 
+
             <div className="data-action-grid">
+
               <section className="data-action-card">
-                <h3>Export Visit Log</h3>
+                <h3>
+                  Export Visit Log
+                </h3>
 
                 <p>
-                  Download visit history for local backup or review.
-                  CSV is recommended and works with most spreadsheet
-                  applications.
+                  Download visit history
+                  for local backup or review.
+                  CSV is recommended and works
+                  with most spreadsheet applications.
                 </p>
 
                 <div className="export-format">
@@ -666,7 +860,9 @@ function App() {
                     className="export-format-select"
                     value={exportFormat}
                     onChange={(event) =>
-                      setExportFormat(event.target.value)
+                      setExportFormat(
+                        event.target.value
+                      )
                     }
                   >
                     <option value="csv">
@@ -678,6 +874,7 @@ function App() {
                     </option>
                   </select>
                 </div>
+
 
                 <div className="year-export-section">
                   <label className="field-label">
@@ -694,7 +891,9 @@ function App() {
                             ? "year-button selected-year"
                             : "year-button"
                         }
-                        onClick={() => setExportYearValue(year)}
+                        onClick={() =>
+                          setExportYearValue(year)
+                        }
                       >
                         {year}
                       </button>
@@ -712,8 +911,11 @@ function App() {
                   </div>
                 </div>
 
+
                 <div className="custom-export">
-                  <h4>Custom date range</h4>
+                  <h4>
+                    Custom date range
+                  </h4>
 
                   <form
                     className="date-range-form"
@@ -732,7 +934,9 @@ function App() {
                         type="date"
                         value={exportStart}
                         onChange={(event) =>
-                          setExportStart(event.target.value)
+                          setExportStart(
+                            event.target.value
+                          )
                         }
                       />
                     </div>
@@ -750,7 +954,9 @@ function App() {
                         type="date"
                         value={exportEnd}
                         onChange={(event) =>
-                          setExportEnd(event.target.value)
+                          setExportEnd(
+                            event.target.value
+                          )
                         }
                       />
                     </div>
@@ -764,13 +970,18 @@ function App() {
                   </form>
                 </div>
               </section>
+
+
               <section className="data-action-card">
-                <h3>Import Visit Log</h3>
+                <h3>
+                  Import Visit Log
+                </h3>
 
                 <p>
-                  Import visit records from a Sunrise Mailroom CSV
-                  or Excel file. Existing visits will be skipped
-                  automatically.
+                  Import visit records from
+                  a Sunrise Mailroom CSV or
+                  Excel file. Existing visits
+                  will be skipped automatically.
                 </p>
 
                 <form
@@ -791,7 +1002,8 @@ function App() {
                     accept=".csv,.xlsx"
                     onChange={(event) => {
                       setImportFile(
-                        event.target.files?.[0] || null
+                        event.target.files?.[0] ||
+                          null
                       );
 
                       setImportResult(null);
@@ -802,7 +1014,10 @@ function App() {
                   <button
                     type="submit"
                     className="import-button"
-                    disabled={!importFile || importing}
+                    disabled={
+                      !importFile ||
+                      importing
+                    }
                   >
                     {importing
                       ? "Importing..."
@@ -812,38 +1027,51 @@ function App() {
 
                 {importResult && (
                   <div className="import-result">
-                    <h4>Import complete</h4>
+                    <h4>
+                      Import complete
+                    </h4>
 
                     <p>
                       Rows read:{" "}
-                      <strong>{importResult.rows_read}</strong>
+                      <strong>
+                        {importResult.rows_read}
+                      </strong>
                     </p>
 
                     <p>
                       Visits added:{" "}
-                      <strong>{importResult.visits_created}</strong>
+                      <strong>
+                        {importResult.visits_created}
+                      </strong>
                     </p>
 
                     <p>
                       Existing visits skipped:{" "}
                       <strong>
-                        {importResult.duplicates_skipped}
+                        {
+                          importResult.duplicates_skipped
+                        }
                       </strong>
                     </p>
 
                     <p>
                       New clients:{" "}
-                      <strong>{importResult.clients_created}</strong>
+                      <strong>
+                        {importResult.clients_created}
+                      </strong>
                     </p>
 
                     <p>
                       Invalid rows:{" "}
-                      <strong>{importResult.invalid_rows}</strong>
+                      <strong>
+                        {importResult.invalid_rows}
+                      </strong>
                     </p>
                   </div>
                 )}
               </section>
             </div>
+
 
             {error && (
               <div className="error-message">
@@ -856,5 +1084,6 @@ function App() {
     </main>
   );
 }
+
 
 export default App;

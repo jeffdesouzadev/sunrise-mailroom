@@ -33,7 +33,9 @@
 .app-shell {
   width: 100%;
   min-height: 100vh;
-  padding: 40px 20px 80px;
+
+  padding: 36px 24px 80px;
+
   box-sizing: border-box;
 
   background:
@@ -47,7 +49,8 @@
 
 .mailroom-card {
   width: 100%;
-  max-width: 780px;
+  max-width: 1180px;
+
   margin: 0 auto;
 }
 
@@ -57,7 +60,8 @@
 ------------------------------------------------------- */
 
 .app-header {
-  margin-bottom: 42px;
+  margin-bottom: 32px;
+
   text-align: center;
 }
 
@@ -84,7 +88,7 @@
 
 
 .page-nav {
-  margin-top: 20px;
+  margin-top: 18px;
 }
 
 
@@ -110,7 +114,36 @@
 
 
 /* -------------------------------------------------------
-   Shared field styling
+   Shared panel headings
+------------------------------------------------------- */
+
+.panel-heading {
+  margin-bottom: 28px;
+
+  padding-bottom: 20px;
+
+  border-bottom: 1px solid var(--border);
+}
+
+
+.panel-heading h2 {
+  margin: 0;
+
+  font-size: 25px;
+
+  color: var(--sunrise-charcoal-dark);
+}
+
+
+.panel-heading p {
+  margin: 6px 0 0;
+
+  color: var(--text-muted);
+}
+
+
+/* -------------------------------------------------------
+   Shared fields
 ------------------------------------------------------- */
 
 .field-label {
@@ -137,6 +170,7 @@
 .dob-input,
 .name-input {
   width: 100%;
+
   box-sizing: border-box;
 
   border: 2px solid #ccccca;
@@ -154,7 +188,7 @@
 .dob-input {
   padding: 16px 18px;
 
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 650;
   letter-spacing: 1px;
 }
@@ -163,7 +197,7 @@
 .name-input {
   padding: 14px 16px;
 
-  font-size: 22px;
+  font-size: 21px;
 }
 
 
@@ -187,20 +221,47 @@
 
 
 /* -------------------------------------------------------
-   Check-in search
+   Check-in desktop layout
 ------------------------------------------------------- */
 
-.search-panel {
-  padding: 32px;
+.checkin-grid {
+  display: grid;
+
+  grid-template-columns:
+    minmax(340px, 0.82fr)
+    minmax(0, 1.35fr);
+
+  gap: 26px;
+
+  align-items: start;
+}
+
+
+.search-panel,
+.results-panel {
+  box-sizing: border-box;
+
+  min-height: 500px;
+
+  padding: 30px;
+
+  border: 1px solid var(--border);
+  border-radius: 18px;
 
   background: var(--surface);
 
-  border: 1px solid var(--border);
-  border-top: 6px solid var(--sunrise-teal);
-  border-radius: 18px;
-
   box-shadow:
     0 8px 28px rgba(70, 70, 70, 0.08);
+}
+
+
+.search-panel {
+  border-top: 6px solid var(--sunrise-teal);
+}
+
+
+.results-panel {
+  border-top: 6px solid var(--sunrise-orange);
 }
 
 
@@ -216,10 +277,10 @@
 .pickup-button {
   flex: 0 0 auto;
 
-  min-width: 190px;
-  min-height: 62px;
+  min-width: 180px;
+  min-height: 58px;
 
-  padding: 14px 22px;
+  padding: 14px 20px;
 
   border: 0;
   border-radius: 12px;
@@ -227,7 +288,7 @@
   background: var(--sunrise-teal);
   color: #ffffff;
 
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
   line-height: 1.15;
 
@@ -260,43 +321,152 @@
 
 .pickup-button:disabled {
   opacity: 0.65;
+
   cursor: default;
 }
 
 
 /* -------------------------------------------------------
-   Search results
+   Search results panel
 ------------------------------------------------------- */
 
-.results-section {
-  margin-top: 32px;
+.results-panel-header {
+  display: flex;
+
+  gap: 20px;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  margin-bottom: 22px;
+
+  padding-bottom: 20px;
+
+  border-bottom: 1px solid var(--border);
 }
 
 
-.results-heading {
-  margin: 0 0 14px 4px;
+.results-panel-header h2 {
+  margin: 0;
 
-  font-size: 16px;
+  font-size: 25px;
+
+  color: var(--sunrise-charcoal-dark);
+}
+
+
+.results-panel-header p {
+  margin: 6px 0 0;
+
+  color: var(--text-muted);
+}
+
+
+.results-count {
+  flex: 0 0 auto;
+
+  padding: 7px 11px;
+
+  border-radius: 999px;
+
+  background: var(--sunrise-orange-soft);
+  color: #8e5900;
+
+  font-size: 14px;
   font-weight: 750;
-
-  color: var(--sunrise-charcoal);
 }
 
+
+.results-placeholder {
+  display: flex;
+
+  min-height: 330px;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 30px;
+
+  box-sizing: border-box;
+
+  border: 2px dashed #dedbd4;
+  border-radius: 14px;
+
+  background: var(--surface-soft);
+
+  text-align: center;
+
+  color: var(--text-muted);
+}
+
+
+.results-placeholder-mark {
+  display: flex;
+
+  width: 52px;
+  height: 52px;
+
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 14px;
+
+  border-radius: 50%;
+
+  background: var(--sunrise-orange-soft);
+  color: var(--sunrise-orange-dark);
+
+  font-size: 28px;
+  font-weight: 800;
+}
+
+
+.results-placeholder h3 {
+  margin: 0 0 8px;
+
+  font-size: 21px;
+
+  color: var(--sunrise-charcoal-dark);
+}
+
+
+.results-placeholder p {
+  max-width: 360px;
+
+  margin: 0;
+
+  line-height: 1.5;
+}
+
+
+.results-list {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 14px;
+}
+
+
+/* -------------------------------------------------------
+   Client cards
+------------------------------------------------------- */
 
 .client-card {
   display: flex;
 
-  gap: 24px;
+  gap: 22px;
 
   align-items: center;
   justify-content: space-between;
 
-  margin-bottom: 14px;
-  padding: 24px;
+  padding: 22px;
 
   border: 1px solid var(--border);
   border-left: 5px solid var(--sunrise-orange);
-  border-radius: 16px;
+  border-radius: 14px;
 
   background: var(--surface);
 
@@ -315,7 +485,7 @@
 .client-details h2 {
   margin: 0 0 8px;
 
-  font-size: 24px;
+  font-size: 23px;
   line-height: 1.2;
 
   color: var(--sunrise-charcoal-dark);
@@ -327,7 +497,7 @@
 
   color: var(--text-muted);
 
-  font-size: 16px;
+  font-size: 15px;
 }
 
 
@@ -342,12 +512,12 @@
 
 
 /* -------------------------------------------------------
-   Empty result / add person
+   Empty result / add new person
 ------------------------------------------------------- */
 
 .empty-message {
-  margin: 20px 0;
-  padding: 20px;
+  margin: 0 0 18px;
+  padding: 18px;
 
   border: 1px solid #edd9b2;
   border-radius: 12px;
@@ -362,8 +532,8 @@
 .add-person-button {
   width: 100%;
 
-  margin-top: 10px;
-  padding: 18px;
+  margin-top: 18px;
+  padding: 16px;
 
   border: 2px dashed var(--sunrise-orange);
   border-radius: 14px;
@@ -371,7 +541,7 @@
   background: transparent;
   color: #a96800;
 
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 750;
 
   cursor: pointer;
@@ -385,7 +555,7 @@
 
 .new-client-form {
   margin-top: 18px;
-  padding: 28px;
+  padding: 24px;
 
   border: 2px solid #b8dfe0;
   border-radius: 16px;
@@ -395,9 +565,9 @@
 
 
 .new-client-form h2 {
-  margin: 0 0 24px;
+  margin: 0 0 22px;
 
-  font-size: 24px;
+  font-size: 23px;
 
   color: var(--sunrise-charcoal-dark);
 }
@@ -467,6 +637,7 @@
 .save-person-button:disabled,
 .cancel-button:disabled {
   opacity: 0.6;
+
   cursor: default;
 }
 
@@ -491,10 +662,17 @@
 
 
 /* -------------------------------------------------------
-   Visit success
+   Success view
 ------------------------------------------------------- */
 
 .success-panel {
+  width: 100%;
+  max-width: 720px;
+
+  margin: 0 auto;
+
+  box-sizing: border-box;
+
   padding: 72px 32px;
 
   border: 1px solid #b8dfe0;
@@ -564,7 +742,7 @@
 ------------------------------------------------------- */
 
 .data-panel {
-  padding: 32px;
+  padding: 30px;
 
   border: 1px solid var(--border);
   border-top: 6px solid var(--sunrise-orange);
@@ -578,7 +756,7 @@
 
 
 .data-heading {
-  margin-bottom: 28px;
+  margin-bottom: 26px;
 }
 
 
@@ -601,12 +779,19 @@
 .data-action-grid {
   display: grid;
 
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
   gap: 24px;
+
+  align-items: start;
 }
 
 
 .data-action-card {
-  padding: 28px;
+  padding: 26px;
+
+  box-sizing: border-box;
 
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -634,25 +819,24 @@
 }
 
 
-.data-action-card p {
+.data-action-card > p {
+  min-height: 48px;
+
   margin: 0 0 24px;
 
   color: var(--text-muted);
+
+  line-height: 1.5;
 }
 
 
 /* -------------------------------------------------------
-   Export file type
+   Export format
 ------------------------------------------------------- */
 
 .export-format {
   margin-top: 22px;
   margin-bottom: 24px;
-}
-
-
-.export-format .field-label {
-  margin-bottom: 8px;
 }
 
 
@@ -709,7 +893,7 @@
 .year-buttons {
   display: flex;
 
-  gap: 12px;
+  gap: 10px;
 
   flex-wrap: wrap;
 
@@ -718,10 +902,10 @@
 
 
 .year-button {
-  min-width: 90px;
-  min-height: 54px;
+  min-width: 82px;
+  min-height: 52px;
 
-  padding: 12px 20px;
+  padding: 10px 16px;
 
   border: 2px solid #d5d2ce;
   border-radius: 10px;
@@ -730,7 +914,7 @@
   color: var(--sunrise-charcoal-dark);
 
   font: inherit;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 750;
 
   cursor: pointer;
@@ -793,8 +977,7 @@
 
   transition:
     background 120ms ease,
-    transform 60ms ease,
-    box-shadow 120ms ease;
+    transform 60ms ease;
 }
 
 
@@ -808,14 +991,8 @@
 }
 
 
-.export-year-button:focus-visible {
-  outline: 4px solid rgba(23, 168, 173, 0.22);
-  outline-offset: 3px;
-}
-
-
 /* -------------------------------------------------------
-   Custom export range
+   Custom export
 ------------------------------------------------------- */
 
 .custom-export {
@@ -838,11 +1015,11 @@
 .date-range-form {
   display: grid;
 
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
 
   gap: 14px;
-
-  align-items: end;
 }
 
 
@@ -863,6 +1040,10 @@
 
 
 .export-range-button {
+  grid-column: 1 / -1;
+
+  justify-self: end;
+
   min-height: 50px;
 
   padding: 10px 22px;
@@ -890,12 +1071,6 @@
 
 .export-range-button:active {
   transform: translateY(1px);
-}
-
-
-.export-range-button:focus-visible {
-  outline: 4px solid rgba(23, 168, 173, 0.22);
-  outline-offset: 3px;
 }
 
 
@@ -991,6 +1166,7 @@
 
 .import-button:disabled {
   opacity: 0.5;
+
   cursor: default;
 }
 
@@ -1023,6 +1199,29 @@
 
 
 /* -------------------------------------------------------
+   Tablet / narrow desktop
+------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .checkin-grid,
+  .data-action-grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  .search-panel,
+  .results-panel {
+    min-height: auto;
+  }
+
+
+  .results-placeholder {
+    min-height: 240px;
+  }
+}
+
+
+/* -------------------------------------------------------
    Mobile
 ------------------------------------------------------- */
 
@@ -1043,6 +1242,7 @@
 
 
   .search-panel,
+  .results-panel,
   .data-panel {
     padding: 22px 18px;
   }
@@ -1105,6 +1305,8 @@
 
 
   .export-range-button {
+    grid-column: auto;
+
     width: 100%;
   }
 }
