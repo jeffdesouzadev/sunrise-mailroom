@@ -1310,3 +1310,40 @@
     width: 100%;
   }
 }
+
+.dob-input-invalid {
+  border-color: var(--sunrise-red);
+  color: var(--sunrise-red-dark);
+  background: var(--sunrise-red-soft);
+}
+
+.dob-input-invalid:focus {
+  border-color: var(--sunrise-red);
+  box-shadow:
+    0 0 0 4px rgba(216, 58, 34, 0.14);
+}
+
+
+.dob-input-ambiguous {
+  border-color: var(--sunrise-orange-dark);
+  color: #8a5700;
+  background: var(--sunrise-orange-soft);
+}
+
+.dob-input-ambiguous:focus {
+  border-color: var(--sunrise-orange-dark);
+  box-shadow:
+    0 0 0 4px rgba(246, 160, 26, 0.16);
+}
+
+
+.dob-feedback-invalid {
+  color: var(--sunrise-red-dark);
+  font-weight: 650;
+}
+
+
+.dob-feedback-ambiguous {
+  color: #8a5700;
+  font-weight: 650;
+}

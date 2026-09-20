@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 
 // const API_BASE = "http://127.0.0.1:8000/api";
@@ -6,26 +6,399 @@ const API_BASE = "/api";
 const currentYear = new Date().getFullYear();
 
 
-function normalizeDob(value) {
-  const cleaned = value.trim();
 
-  if (/^\d{4}-\d{2}-\d{2}$/.test(cleaned)) {
-    return cleaned;
+function expandDobYear(yearText) {
+  if (yearText.length === 4) {
+    return Number(yearText);
   }
 
-  const match = cleaned.match(
-    /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
-  );
-
-  if (!match) {
+  if (yearText.length !== 2) {
     return null;
   }
 
-  const [, month, day, year] = match;
+  const shortYear = Number(yearText);
 
-  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  const now = new Date();
+  const century =
+    Math.floor(now.getFullYear() / 100) * 100;
+
+  const currentShortYear =
+    now.getFullYear() % 100;
+
+  return shortYear <= currentShortYear
+    ? century + shortYear
+    : century - 100 + shortYear;
 }
 
+
+function buildDob(monthText, dayText, yearText) {
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const year = expandDobYear(yearText);
+
+  if (
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    !year
+  ) {
+    return null;
+  }
+
+  const candidate = new Date(
+    year,
+    month - 1,
+    day
+  );
+
+  if (
+    candidate.getFullYear() !== year ||
+    candidate.getMonth() !== month - 1 ||
+    candidate.getDate() !== day
+  ) {
+    return null;
+  }
+
+  const today = new Date();
+
+  if (candidate > today) {
+    return null;
+  }
+
+  const display =
+    `${String(month).padStart(2, "0")}/` +
+    `${String(day).padStart(2, "0")}/` +
+    `${year}`;
+
+  const iso =
+    `${year}-` +
+    `${String(month).padStart(2, "0")}-` +
+    `${String(day).padStart(2, "0")}`;
+
+  return {
+    month,
+    day,
+    year,
+    display,
+    iso,
+  };
+}
+
+
+function findCompactDobCandidates(digits) {
+  const candidates = [];
+
+  for (const monthLength of [2, 1]) {
+    for (const dayLength of [2, 1]) {
+      const yearLength =
+        digits.length -
+        monthLength -
+        dayLength;
+
+      if (
+        yearLength !== 2 &&
+        yearLength !== 4
+      ) {
+        continue;
+      }
+
+      const monthText =
+        digits.slice(
+          0,
+          monthLength
+        );
+
+      const dayText =
+        digits.slice(
+          monthLength,
+          monthLength + dayLength
+        );
+
+      const yearText =
+        digits.slice(
+          monthLength + dayLength
+        );
+
+      const candidate = buildDob(
+        monthText,
+        dayText,
+        yearText
+      );
+
+      if (candidate) {
+        candidates.push(candidate);
+      }
+    }
+  }
+
+  // Remove duplicate interpretations.
+  return candidates.filter(
+    (candidate, index, all) =>
+      all.findIndex(
+        (other) =>
+          other.iso === candidate.iso
+      ) === index
+  );
+}
+
+
+function analyzeDobInput(value) {
+  const cleaned = value.trim();
+
+  if (!cleaned) {
+    return {
+      status: "empty",
+      candidates: [],
+    };
+  }
+
+  /*
+   * Explicit slash input:
+   *
+   * 4/5/81
+   * 04/05/1981
+   */
+  if (cleaned.includes("/")) {
+    const parts = cleaned.split("/");
+
+    if (parts.length > 3) {
+      return {
+        status: "invalid",
+        candidates: [],
+      };
+    }
+
+    const monthText = parts[0];
+
+    if (monthText) {
+      const month = Number(monthText);
+
+      if (
+        month < 1 ||
+        month > 12 ||
+        monthText.length > 2
+      ) {
+        return {
+          status: "invalid",
+          candidates: [],
+        };
+      }
+    }
+
+    if (parts.length >= 2) {
+      const dayText = parts[1];
+
+      if (dayText) {
+        const day = Number(dayText);
+        const month = Number(monthText);
+
+        if (
+          day < 1 ||
+          day > 31 ||
+          dayText.length > 2
+        ) {
+          return {
+            status: "invalid",
+            candidates: [],
+          };
+        }
+
+        const maxDays = [
+          31,
+          29,
+          31,
+          30,
+          31,
+          30,
+          31,
+          31,
+          30,
+          31,
+          30,
+          31,
+        ];
+
+        if (
+          month >= 1 &&
+          month <= 12 &&
+          day > maxDays[month - 1]
+        ) {
+          return {
+            status: "invalid",
+            candidates: [],
+          };
+        }
+      }
+    }
+
+    if (parts.length < 3) {
+      return {
+        status: "incomplete",
+        candidates: [],
+      };
+    }
+
+    const [
+      monthTextFinal,
+      dayTextFinal,
+      yearText,
+    ] = parts;
+
+    if (
+      !monthTextFinal ||
+      !dayTextFinal ||
+      !yearText
+    ) {
+      return {
+        status: "incomplete",
+        candidates: [],
+      };
+    }
+
+    if (
+      yearText.length < 2 ||
+      yearText.length === 3
+    ) {
+      return {
+        status: "incomplete",
+        candidates: [],
+      };
+    }
+
+    if (
+      yearText.length !== 2 &&
+      yearText.length !== 4
+    ) {
+      return {
+        status: "invalid",
+        candidates: [],
+      };
+    }
+
+    const candidate = buildDob(
+      monthTextFinal,
+      dayTextFinal,
+      yearText
+    );
+
+    if (!candidate) {
+      return {
+        status: "invalid",
+        candidates: [],
+      };
+    }
+
+    return {
+      status: "valid",
+      candidate,
+      candidates: [candidate],
+    };
+  }
+
+  /*
+   * Compact numeric input:
+   *
+   * 451981
+   * 4581
+   * 04051981
+   */
+  if (!/^\d+$/.test(cleaned)) {
+    return {
+      status: "invalid",
+      candidates: [],
+    };
+  }
+
+  if (cleaned.length < 4) {
+    return {
+      status: "incomplete",
+      candidates: [],
+    };
+  }
+
+  if (cleaned.length > 8) {
+    return {
+      status: "invalid",
+      candidates: [],
+    };
+  }
+
+  const candidates =
+    findCompactDobCandidates(cleaned);
+
+  if (candidates.length === 0) {
+    return {
+      status: "invalid",
+      candidates: [],
+    };
+  }
+
+  if (candidates.length > 1) {
+    return {
+      status: "ambiguous",
+      candidates,
+    };
+  }
+
+  return {
+    status: "valid",
+    candidate: candidates[0],
+    candidates,
+  };
+}
+
+
+function normalizeDob(value) {
+  const analysis =
+    analyzeDobInput(value);
+
+  if (analysis.status !== "valid") {
+    return null;
+  }
+
+  return analysis.candidate.iso;
+}
+
+
+function formatDobInput(value) {
+  let cleaned = value
+    .replace(/[^\d/]/g, "")
+    .slice(0, 10);
+
+  /*
+   * If the user deliberately types "/",
+   * clean up the completed segment.
+   *
+   * 4/     -> 04/
+   * 4/5/   -> 04/05/
+   */
+  if (cleaned.includes("/")) {
+    const parts = cleaned.split("/");
+
+    if (
+      parts.length >= 2 &&
+      parts[0].length === 1 &&
+      Number(parts[0]) >= 1 &&
+      Number(parts[0]) <= 9
+    ) {
+      parts[0] =
+        parts[0].padStart(2, "0");
+    }
+
+    if (
+      parts.length >= 3 &&
+      parts[1].length === 1 &&
+      Number(parts[1]) >= 1 &&
+      Number(parts[1]) <= 9
+    ) {
+      parts[1] =
+        parts[1].padStart(2, "0");
+    }
+
+    cleaned = parts.join("/");
+  }
+
+  return cleaned;
+}
 
 function calculateAge(dateOfBirth) {
   if (!dateOfBirth) {
@@ -52,28 +425,6 @@ function calculateAge(dateOfBirth) {
 
   return age;
 }
-
-
-function formatDobInput(value) {
-  const digits = value
-    .replace(/\D/g, "")
-    .slice(0, 8);
-
-  if (digits.length <= 2) {
-    return digits;
-  }
-
-  if (digits.length <= 4) {
-    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  }
-
-  return (
-    `${digits.slice(0, 2)}/` +
-    `${digits.slice(2, 4)}/` +
-    `${digits.slice(4)}`
-  );
-}
-
 
 function formatDob(value) {
   if (!value) {
@@ -107,6 +458,10 @@ function formatVisit(value) {
 
 function App() {
   const [dob, setDob] = useState("");
+  const [dobStatus, setDobStatus] =
+  useState("empty");
+  const [dobCandidates, setDobCandidates] =
+  useState([]);
   const [name, setName] = useState("");
   const [clients, setClients] = useState([]);
   const [showNewClient, setShowNewClient] = useState(false);
@@ -133,77 +488,126 @@ function App() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
 
+  useEffect(() => {
+    if (!dob.trim()) {
+      setDobStatus("empty");
+      setDobCandidates([]);
+      return;
+    }
 
-  async function searchClients(event) {
-    event?.preventDefault();
+    const timer = setTimeout(() => {
+      const analysis =
+        analyzeDobInput(dob);
 
-    setError("");
-    setSuccess(null);
-    setShowNewClient(false);
+      setDobStatus(analysis.status);
 
-    const enteredDob = dob.trim();
-    const enteredName = name.trim();
+      setDobCandidates(
+        analysis.candidates || []
+      );
 
-    if (!enteredDob && !enteredName) {
+      if (
+        analysis.status === "valid" &&
+        analysis.candidate.display !== dob
+      ) {
+        setDob(
+          analysis.candidate.display
+        );
+      }
+    }, 1000);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [dob]);
+
+async function searchClients(event) {
+  event?.preventDefault();
+
+  setError("");
+  setSuccess(null);
+  setShowNewClient(false);
+
+  const enteredDob = dob.trim();
+  const enteredName = name.trim();
+
+  if (!enteredDob && !enteredName) {
+    setError(
+      "Enter a date of birth or a name."
+    );
+    return;
+  }
+
+  const params = new URLSearchParams();
+
+  if (enteredDob) {
+    const dobAnalysis =
+      analyzeDobInput(enteredDob);
+
+    if (
+      dobAnalysis.status === "ambiguous"
+    ) {
       setError(
-        "Enter a date of birth or a name."
+        "That birthday is ambiguous. Add slashes to choose the intended date."
       );
       return;
     }
 
-    const params = new URLSearchParams();
-
-    if (enteredDob) {
-      const normalizedDob =
-        normalizeDob(enteredDob);
-
-      if (!normalizedDob) {
-        setError(
-          "Enter the date of birth as MM/DD/YYYY."
-        );
-        return;
-      }
-
-      params.set("dob", normalizedDob);
-    }
-
-    if (enteredName) {
-      params.set("name", enteredName);
-    }
-
-    setLoading(true);
-
-    try {
-      const response = await fetch(
-        `${API_BASE}/clients/?${params.toString()}`
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          "Client search failed."
-        );
-      }
-
-      const data = await response.json();
-
-      setClients(data);
-
-      if (data.length === 0) {
-        setShowNewClient(true);
-        setNewClientName(enteredName);
-      } else {
-        setShowNewClient(false);
-      }
-    } catch (err) {
-      console.error(err);
-
+    if (
+      dobAnalysis.status !== "valid"
+    ) {
       setError(
-        "Unable to search for clients."
+        "Enter a valid date of birth."
       );
-    } finally {
-      setLoading(false);
+      return;
     }
+
+    params.set(
+      "dob",
+      dobAnalysis.candidate.iso
+    );
   }
+
+  if (enteredName) {
+    params.set(
+      "name",
+      enteredName
+    );
+  }
+
+  setLoading(true);
+
+  try {
+    const response = await fetch(
+      `${API_BASE}/clients/?${params.toString()}`
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        "Client search failed."
+      );
+    }
+
+    const data =
+      await response.json();
+
+    setClients(data);
+
+    if (data.length === 0) {
+      setShowNewClient(true);
+      setNewClientName(enteredName);
+    } else {
+      setShowNewClient(false);
+    }
+  } catch (err) {
+    console.error(err);
+
+    setError(
+      "Unable to search for clients."
+    );
+  } finally {
+    setLoading(false);
+  }
+}
 
 
   function exportYear() {
@@ -347,9 +751,6 @@ function App() {
 
     setError("");
 
-    const normalizedDob =
-      normalizeDob(dob);
-
     if (!newClientName.trim()) {
       setError(
         "Enter the person's full name."
@@ -357,12 +758,36 @@ function App() {
       return;
     }
 
-    if (!normalizedDob) {
+    if (!dob.trim()) {
       setError(
         "A date of birth is required when creating a new person."
       );
       return;
     }
+
+    const dobAnalysis =
+      analyzeDobInput(dob);
+
+    if (
+      dobAnalysis.status === "ambiguous"
+    ) {
+      setError(
+        "That birthday is ambiguous. Add slashes to choose the intended date."
+      );
+      return;
+    }
+
+    if (
+      dobAnalysis.status !== "valid"
+    ) {
+      setError(
+        "Enter a valid date of birth."
+      );
+      return;
+    }
+
+    const normalizedDob =
+      dobAnalysis.candidate.iso;
 
     setLoading(true);
 
@@ -542,24 +967,101 @@ function App() {
 
                 <input
                   id="dob"
-                  className="dob-input"
+                  className={
+                    `dob-input ` +
+                    `${
+                      dobStatus === "invalid"
+                        ? "dob-input-invalid"
+                        : dobStatus === "ambiguous"
+                          ? "dob-input-ambiguous"
+                          : ""
+                    }`
+                  }
                   type="text"
-                  inputMode="numeric"
+                  inputMode="text"
                   autoComplete="off"
+                  aria-describedby="dob-hint"
+                  aria-invalid={dobStatus === "invalid"}
                   placeholder="MM/DD/YYYY"
                   value={dob}
+                  title={
+                    dobStatus === "ambiguous"
+                      ? dobCandidates
+                          .map(
+                            (candidate) =>
+                              candidate.display
+                          )
+                          .join(" or ")
+                      : undefined
+                  }
                   onChange={(event) => {
-                    setDob(
+                    const nextValue =
                       formatDobInput(
                         event.target.value
-                      )
-                    );
+                      );
+
+                    setDob(nextValue);
+
+                    /*
+                    * Slash-based errors can be detected
+                    * immediately instead of waiting for
+                    * the debounce.
+                    */
+                    if (nextValue.includes("/")) {
+                      const immediate =
+                        analyzeDobInput(nextValue);
+
+                      if (
+                        immediate.status === "invalid"
+                      ) {
+                        setDobStatus("invalid");
+                        setDobCandidates([]);
+                      } else {
+                        setDobStatus("incomplete");
+                        setDobCandidates([]);
+                      }
+                    } else {
+                      setDobStatus("incomplete");
+                      setDobCandidates([]);
+                    }
                   }}
                   autoFocus
                 />
 
-                <p className="field-hint">
-                  Enter the client's birthday.
+                <p
+                  id="dob-hint"
+                  className={
+                    `field-hint dob-feedback ` +
+                    `${
+                      dobStatus === "invalid"
+                        ? "dob-feedback-invalid"
+                        : dobStatus === "ambiguous"
+                          ? "dob-feedback-ambiguous"
+                          : ""
+                    }`
+                  }
+                >
+                  {dobStatus === "invalid"
+                    ? "That date does not look valid."
+                    : dobStatus === "ambiguous"
+                      ? (
+                        <>
+                          Ambiguous date — could be{" "}
+                          {dobCandidates
+                            .map(
+                              (candidate) =>
+                                candidate.display
+                            )
+                            .join(" or ")}
+                          . Add slashes to choose.
+                        </>
+                      )
+                      : (
+                        <>
+                          Examples: 04/05/1981,
+                          4/5/81, 451981, or 4581.
+                        </>
+                      )}
                 </p>
 
                 <div className="name-search">
