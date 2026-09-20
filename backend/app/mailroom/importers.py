@@ -2,6 +2,8 @@ from datetime import datetime
 from openpyxl import load_workbook
 import re
 from zoneinfo import ZoneInfo
+import csv
+from io import StringIO
 
 
 FORMAT_SUNRISE_EXPORT = "sunrise_export"
@@ -196,6 +198,127 @@ def parse_sunrise_export(workbook):
             })
 
     return records
+
+def parse_csv(uploaded_file):
+    """
+    Parse a Sunrise Mailroom CSV export.
+
+    Expected columns:
+
+        Date of Birth | Name | Timestamp (timezone)
+    """
+
+    try:
+        raw_text = uploaded_file.read().decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise ValueError(
+            "The CSV file could not be read as UTF-8."
+        ) from exc
+
+    reader = csv.reader(StringIO(raw_text))
+
+    try:
+        headers = next(reader)
+    except StopIteration:
+        raise ValueError(
+            "The CSV file is empty."
+        )
+
+    normalized_headers = [
+        normalize_header(value)
+        for value in headers
+    ]
+
+    if not (
+        len(normalized_headers) >= 3
+        and normalized_headers[0] == "date of birth"
+        and normalized_headers[1] == "name"
+        and normalized_headers[2].startswith("timestamp")
+    ):
+        raise ValueError(
+            "The CSV format could not be recognized."
+        )
+
+    timezone_name = extract_timezone_from_header(
+        headers[2]
+    )
+
+    records = []
+
+    for row_number, row in enumerate(
+        reader,
+        start=2,
+    ):
+        if not any(
+            str(value).strip()
+            for value in row
+        ):
+            continue
+
+        dob_value = (
+            row[0]
+            if len(row) > 0
+            else None
+        )
+
+        name_value = (
+            row[1]
+            if len(row) > 1
+            else None
+        )
+
+        timestamp_value = (
+            row[2]
+            if len(row) > 2
+            else None
+        )
+
+        full_name = (
+            str(name_value).strip()
+            if name_value is not None
+            else ""
+        )
+
+        date_of_birth = parse_excel_date(
+            dob_value
+        )
+
+        visited_at = parse_excel_timestamp(
+            timestamp_value
+        )
+
+        if (
+            not full_name
+            or not date_of_birth
+            or not visited_at
+        ):
+            records.append({
+                "valid": False,
+                "sheet": "CSV",
+                "row": row_number,
+                "reason": (
+                    "Missing or invalid name, date of birth, "
+                    "or timestamp."
+                ),
+            })
+
+            continue
+
+        records.append({
+            "valid": True,
+            "sheet": "CSV",
+            "row": row_number,
+            "full_name": full_name,
+            "date_of_birth": date_of_birth,
+            "visited_at": visited_at,
+            "timezone_name": timezone_name,
+        })
+
+    return {
+        "format": FORMAT_SUNRISE_EXPORT,
+        "records": records,
+    }
+
 
 def parse_workbook(uploaded_file):
     workbook = load_workbook(

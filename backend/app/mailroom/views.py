@@ -7,7 +7,10 @@ from django.db import transaction
 # from .system_timezone import get_system_timezone
 from .system_timezone import get_mailroom_timezone
 from django.utils import timezone
-from .importers import parse_workbook
+from .importers import (
+    parse_workbook,
+    parse_csv,
+)
 
 from django.http import HttpResponse
 from openpyxl import Workbook
@@ -277,7 +280,7 @@ def export_visits(request):
                 ),
                 visit.client.full_name,
                 local_visit.strftime(
-                    "%m/%d/%Y %I:%M %p"
+                    "%m/%d/%Y %I:%M:%S %p"
                 ),
             ])
 
@@ -460,21 +463,34 @@ def import_visits(request):
     if not uploaded_file:
         return Response(
             {
-                "error": "No Excel file was provided."
+                "error": "No import file was provided."
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    if not uploaded_file.name.lower().endswith(".xlsx"):
-        return Response(
-            {
-                "error": "Only .xlsx files are supported."
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+    filename = uploaded_file.name.lower()
 
     try:
-        parsed = parse_workbook(uploaded_file)
+        if filename.endswith(".xlsx"):
+            parsed = parse_workbook(
+                uploaded_file
+            )
+
+        elif filename.endswith(".csv"):
+            parsed = parse_csv(
+                uploaded_file
+            )
+
+        else:
+            return Response(
+                {
+                    "error": (
+                        "Only .xlsx and .csv files "
+                        "are supported."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     except ValueError as exc:
         return Response(
