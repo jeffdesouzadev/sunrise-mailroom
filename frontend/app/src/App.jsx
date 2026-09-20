@@ -101,8 +101,10 @@ function App() {
     { length: 5 },
     (_, index) => currentYear - index
   );
+  const [exportYearValue, setExportYearValue] = useState(currentYear);
   const [exportStart, setExportStart] = useState("");
   const [exportEnd, setExportEnd] = useState("");
+  const [exportFormat, setExportFormat] = useState("csv");
 
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
@@ -174,9 +176,11 @@ function App() {
   }
 
 
-  function exportYear(year) {
+  function exportYear() {
     window.location.href =
-      `${API_BASE}/export/visits/?year=${year}`;
+      `${API_BASE}/export/visits/` +
+      `?year=${exportYearValue}` +
+      `&export_format=${exportFormat}`;
   }
 
   function exportDateRange(event) {
@@ -195,16 +199,17 @@ function App() {
     setError("");
 
     window.location.href =
-      `${API_BASE}/export/visits/` +
-      `?start=${encodeURIComponent(exportStart)}` +
-      `&end=${encodeURIComponent(exportEnd)}`;
+    `${API_BASE}/export/visits/` +
+    `?start=${encodeURIComponent(exportStart)}` +
+    `&end=${encodeURIComponent(exportEnd)}` +
+    `&export_format=${exportFormat}`;
   }
 
   async function importVisitLog(event) {
   event.preventDefault();
 
   if (!importFile) {
-    setError("Choose an Excel file to import.");
+    setError("Choose a CSV or Excel file to import.");
     return;
   }
 
@@ -246,7 +251,7 @@ function App() {
     console.error(err);
 
     setError(
-      err.message || "Unable to import the Excel file."
+      err.message || "Unable to import the file."
     );
   } finally {
     setImporting(false);
@@ -643,25 +648,68 @@ function App() {
                 <h3>Export Visit Log</h3>
 
                 <p>
-                  Download visit history as an Excel workbook,
-                  organized by month.
+                  Download visit history for local backup or review.
+                  CSV is recommended and works with most spreadsheet
+                  applications.
                 </p>
 
-                <div className="year-buttons">
-                  {exportYears.map((year) => (
+                <div className="export-format">
+                  <label
+                    className="field-label"
+                    htmlFor="export-format"
+                  >
+                    File type
+                  </label>
+
+                  <select
+                    id="export-format"
+                    className="export-format-select"
+                    value={exportFormat}
+                    onChange={(event) =>
+                      setExportFormat(event.target.value)
+                    }
+                  >
+                    <option value="csv">
+                      CSV — recommended
+                    </option>
+
+                    <option value="xlsx">
+                      Excel workbook (.xlsx)
+                    </option>
+                  </select>
+                </div>
+
+                <div className="year-export-section">
+                  <label className="field-label">
+                    Year
+                  </label>
+
+                  <div className="year-buttons">
+                    {exportYears.map((year) => (
+                      <button
+                        key={year}
+                        type="button"
+                        className={
+                          year === exportYearValue
+                            ? "year-button selected-year"
+                            : "year-button"
+                        }
+                        onClick={() => setExportYearValue(year)}
+                      >
+                        {year}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="year-export-action">
                     <button
-                      key={year}
                       type="button"
-                      className={
-                        year === currentYear
-                          ? "year-button current-year"
-                          : "year-button"
-                      }
-                      onClick={() => exportYear(year)}
+                      className="export-year-button"
+                      onClick={exportYear}
                     >
-                      {year}
+                      Export {exportYearValue}
                     </button>
-                  ))}
+                  </div>
                 </div>
 
                 <div className="custom-export">
@@ -720,8 +768,9 @@ function App() {
                 <h3>Import Visit Log</h3>
 
                 <p>
-                  Import visit records from a Sunrise Mailroom Excel workbook.
-                  Existing visits will be skipped automatically.
+                  Import visit records from a Sunrise Mailroom CSV
+                  or Excel file. Existing visits will be skipped
+                  automatically.
                 </p>
 
                 <form
@@ -732,14 +781,14 @@ function App() {
                     className="field-label"
                     htmlFor="visit-import-file"
                   >
-                    Excel workbook
+                    CSV or Excel file
                   </label>
 
                   <input
                     id="visit-import-file"
                     className="import-file-input"
                     type="file"
-                    accept=".xlsx"
+                    accept=".csv,.xlsx"
                     onChange={(event) => {
                       setImportFile(
                         event.target.files?.[0] || null

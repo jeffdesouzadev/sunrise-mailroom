@@ -162,7 +162,7 @@ def export_visits(request):
 
     export_format = request.GET.get(
         "export_format",
-        "xlsx",
+        "csv",
     ).lower()   
 
     if export_format not in {"xlsx", "csv"}:
