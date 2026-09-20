@@ -1,3 +1,4 @@
+import csv
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from datetime import date, datetime, time, timedelta
@@ -156,6 +157,17 @@ def export_visits(request):
     start_param = request.GET.get("start")
     end_param = request.GET.get("end")
 
+    export_format = request.GET.get(
+        "export_format",
+        "xlsx",
+    ).lower()   
+
+    if export_format not in {"xlsx", "csv"}:
+        return Response(
+            {"error": "Format must be 'xlsx' or 'csv'."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )    
+
     #
     # Determine requested date range.
     #
@@ -224,6 +236,52 @@ def export_visits(request):
         .select_related("client")
         .order_by("visited_at")
     )
+
+    if export_format == "csv":
+        if year_param:
+            filename = f"sunrise-visits-{year}.csv"
+        else:
+            filename = (
+                f"sunrise-visits-"
+                f"{start_date.isoformat()}-"
+                f"{end_date.isoformat()}.csv"
+            )
+
+        response = HttpResponse(
+            content_type="text/csv; charset=utf-8",
+        )
+
+        response["Content-Disposition"] = (
+            f'attachment; filename="{filename}"'
+        )
+
+        # Helps Excel/Windows recognize UTF-8 cleanly.
+        response.write("\ufeff")
+
+        writer = csv.writer(response)
+
+        writer.writerow([
+            "Date of Birth",
+            "Name",
+            f"Timestamp ({timezone_label})",
+        ])
+
+        for visit in visits:
+            local_visit = visit.visited_at.astimezone(
+                local_timezone
+            )
+
+            writer.writerow([
+                visit.client.date_of_birth.strftime(
+                    "%m/%d/%Y"
+                ),
+                visit.client.full_name,
+                local_visit.strftime(
+                    "%m/%d/%Y %I:%M %p"
+                ),
+            ])
+
+        return response
 
     workbook = Workbook()
 
