@@ -1,116 +1,150 @@
 # Sunrise Mailroom
 
-A small Django + React application for recording mailroom visits at Sunrise Homeless Navigation Center.
+**Version 2.0**
 
-The project is intentionally simple. It is designed around the workflow actually used at the mailroom window and is intended to remain easy for volunteers to learn, operate, and maintain.
+A small Django + React application for recording mailroom visits at
+Sunrise Homeless Navigation Center.
+
+Sunrise Mailroom is intentionally simple. It is designed around the
+workflow actually used at the mailroom window and is intended to remain
+easy for volunteers to learn, operate, and maintain.
+
+Version 2.0 represents the streamlined mailroom workflow: client lookup,
+visit recording, historical data import, and staff-friendly exports,
+with SQLite as the local source of truth.
+
+------------------------------------------------------------------------
 
 ## Purpose
 
-The mailroom serves people who use Sunrise as a reliable mailing address.
+The mailroom serves people who use Sunrise as a reliable mailing
+address.
 
 The application's primary job is to answer two questions:
 
-1. **Who is at the window?**
-2. **When have they visited the mailroom?**
+1.  **Who is at the window?**
+2.  **When have they visited the mailroom?**
 
-It replaces a spreadsheet-based process in which clients are identified primarily by date of birth and name, and mail pickups are recorded in monthly worksheets.
+It replaces a spreadsheet-based process in which clients are identified
+primarily by date of birth and name, and mail pickups are recorded in
+monthly worksheets.
 
-The application stores those visits as individual database records instead. This gives us a much cleaner history while still allowing the data to be exported to Excel for reporting and backup.
+The application stores those visits as individual database records. This
+provides a cleaner, normalized history while still allowing staff to
+export familiar spreadsheet files for reporting, review, and backup.
 
----
+------------------------------------------------------------------------
 
-# Current Workflow
+## Current Workflow
 
 The intended volunteer workflow is:
 
-1. Ask the client for their **date of birth**.
-2. Search by DOB to narrow the list of possible clients.
-3. Ask for their **name**, if needed, to narrow the results further.
-4. Select the correct client.
-5. Click **Picked Up Mail**.
-6. The application records a timestamped visit and resets for the next person.
+1.  Ask the client for their **date of birth**.
+2.  Enter the DOB. The field accepts several convenient forms, including
+    `04/05/1981`, `4/5/81`, `451981`, and `4581`.
+3.  Search by DOB, name, or both.
+4.  Select the correct client from the results.
+5.  Click **Record Visit**.
+6.  The application records a timestamped visit and presents a
+    confirmation screen.
+7.  Click **Next Person** to prepare for the next client.
+
+The DOB field is designed for fast front-desk entry. It validates
+slash-based input while typing and attempts to interpret and format
+completed dates automatically. It also parses immediately when the
+volunteer finishes the field or submits the search.
 
 If the person does not exist yet:
 
-1. Enter their full name.
-2. Enter their date of birth.
-3. Create the client.
-4. Record their current visit.
+1.  Search for the person first.
+2.  Choose the option to add a new person.
+3.  Enter or confirm their full name and date of birth.
+4.  Click **Add Person & Record Visit**.
 
-The normal interaction should require as few clicks and as little typing as possible.
+The normal interaction should require as few clicks and as little typing
+as possible.
 
----
+------------------------------------------------------------------------
 
-# Design Principles
+## Design Principles
 
-## Keep the volunteer workflow simple
+### Keep the volunteer workflow simple
 
-This application will often be used by volunteers who are not particularly comfortable with computers.
+This application will often be used by volunteers who may not be
+especially comfortable with computers.
 
-The primary workflow should therefore remain extremely obvious:
+The primary workflow should therefore remain obvious:
 
-**DOB → Name → Picked Up Mail**
+**DOB / Name → Find Person → Record Visit**
 
-Administrative and reporting features should not interfere with that workflow.
+Administrative, import, export, and reporting features belong on the
+separate **Data & Export** screen so they do not interfere with routine
+check-in.
 
-## Model what the mailroom actually does
+### Model what the mailroom actually does
 
-Earlier versions of the project included package tracking, authorized pickup records, client activity flags, and structured first/last-name handling.
+Earlier versions of the project included package tracking, authorized
+pickup records, client activity flags, and structured first/last-name
+handling.
 
-After observing the actual mailroom workflow, those features were intentionally removed.
+After observing the actual mailroom workflow, those features were
+intentionally removed from the core application.
 
-The current application models only two core concepts:
+Version 2.0 models two primary concepts:
 
-### Client
+#### Client
 
 A person who receives mail through the mailroom.
 
 Currently stored:
 
-- Full name
-- Date of birth
-- Creation timestamp
-- Last-updated timestamp
+-   Full name
+-   Date of birth
+-   Creation timestamp
+-   Last-updated timestamp
 
-### Visit
+#### Visit
 
-A timestamped record that a client came to the mailroom to pick up mail.
+A timestamped record that a client came to the mailroom.
 
 Each visit belongs to one client.
 
-This replaces the previous spreadsheet approach of maintaining separate monthly attendance/pickup sheets.
+This replaces the previous spreadsheet approach of maintaining separate
+monthly attendance/pickup sheets.
 
----
+------------------------------------------------------------------------
 
-# Name Handling
+## Name Handling
 
 Names are deliberately stored as a single `full_name` field.
 
-We do **not** attempt to determine which parts of a person's name represent their first, middle, or last name.
+We do **not** attempt to determine which parts of a person's name
+represent their first, middle, or last name.
 
 This is intentional.
 
 Clients may have:
 
-- multiple given names
-- multiple family names
-- compound surnames
-- hyphenated names
-- three, four, five, or more name components
+-   multiple given names
+-   multiple family names
+-   compound surnames
+-   hyphenated names
+-   three, four, five, or more name components
 
-Trying to force those names into `first_name` and `last_name` fields adds complexity without helping the actual mailroom workflow.
+Trying to force those names into `first_name` and `last_name` fields
+adds complexity without helping the actual mailroom workflow.
 
 Search instead treats the entered name as a set of tokens.
 
 For example, a client stored as:
 
-```text
+``` text
 Sean Patrick O Connor Murphy
 ```
 
 can be found with searches such as:
 
-```text
+``` text
 Sean
 Sean Murphy
 Murphy Sean
@@ -118,32 +152,69 @@ Patrick Murphy
 O Connor Murphy
 ```
 
-The date of birth is normally used first to dramatically reduce the number of potential matches.
+Date of birth can be used alongside the name to dramatically reduce the
+number of potential matches.
 
----
+------------------------------------------------------------------------
 
-# Backend
+## Date-of-Birth Entry
+
+DOB entry is deliberately forgiving because it is one of the most
+frequently used fields in the application.
+
+Examples of accepted input include:
+
+``` text
+04/05/1981
+4/5/81
+451981
+4581
+```
+
+When a compact numeric date has only one valid interpretation, the UI
+can normalize it to the familiar:
+
+``` text
+MM/DD/YYYY
+```
+
+If a compact entry could represent more than one valid date, the UI
+reports it as ambiguous and asks the volunteer to add slashes.
+
+Impossible dates are rejected rather than silently corrected.
+
+The backend ultimately receives a normalized ISO date such as:
+
+``` text
+1981-04-05
+```
+
+------------------------------------------------------------------------
+
+## Backend
 
 The backend uses:
 
-- Python
-- Django
-- Django REST Framework
-- SQLite
+-   Python
+-   Django
+-   Django REST Framework
+-   SQLite
 
-SQLite is currently intentional.
+SQLite is intentional.
 
-The application is expected to run primarily as a standalone installation on a Windows laptop with a relatively small amount of data and very low write concurrency.
+The production target is a standalone installation on a Windows laptop
+with a relatively small amount of data and very low write concurrency.
+SQLite keeps installation, operation, migration, and backup
+substantially simpler than requiring a separate database server.
 
-Using SQLite keeps installation, operation, and backup substantially simpler than requiring a separate database server.
+If actual usage eventually requires PostgreSQL or another database
+server, Django provides a reasonable migration path.
 
-If actual usage eventually requires PostgreSQL, Django makes that migration straightforward.
-
-## Current Models
+### Current Models
 
 Conceptually:
 
-```text
+``` text
 Client
 ├── full_name
 ├── date_of_birth
@@ -157,7 +228,7 @@ Visit
 
 A client may have any number of visits:
 
-```text
+``` text
 Client
   │
   ├── Visit
@@ -166,104 +237,212 @@ Client
   └── ...
 ```
 
-The visit history is the authoritative record of mailroom usage.
+The visit history in SQLite is the authoritative record of mailroom
+usage.
 
----
+------------------------------------------------------------------------
 
-# API
+## API
 
-The current API is intentionally small.
+The API is intentionally small.
 
-## Health Check
+### Health Check
 
-```http
+``` http
 GET /api/health/
 ```
 
 Confirms that the Django backend is running.
 
-## Search/List Clients
+### Search/List Clients
 
-```http
+``` http
 GET /api/clients/
 ```
 
 Clients can be narrowed by date of birth:
 
-```http
+``` http
 GET /api/clients/?dob=1985-05-10
 ```
 
 and by name:
 
-```http
+``` http
 GET /api/clients/?dob=1985-05-10&name=juan
 ```
 
 Multiple name tokens may be supplied:
 
-```http
+``` http
 GET /api/clients/?dob=1985-05-10&name=juan%20cruz
 ```
 
 All entered name tokens must occur somewhere in the client's full name.
 
-## Create Client
+### Create Client
 
-```http
+``` http
 POST /api/clients/
 ```
 
 Example:
 
-```json
+``` json
 {
   "full_name": "Juan Carlos De La Cruz",
   "date_of_birth": "1985-05-10"
 }
 ```
 
-## Client Detail
+### Client Detail
 
-```http
+``` http
 GET /api/clients/<id>/
 ```
 
 Returns the client and their visit history.
 
-## Edit Client
+### Edit Client
 
-```http
+``` http
 PATCH /api/clients/<id>/
 ```
 
-Client deletion is intentionally not part of the normal API because deleting a client would also destroy their visit history.
+Client deletion is intentionally not part of the normal volunteer
+workflow because deleting a client can also destroy historical visit
+data.
 
-Administrative corrections can currently be handled through Django Admin.
+Administrative corrections can be handled through Django Admin.
 
-## Record Visit
+### Record Visit
 
-```http
+``` http
 POST /api/clients/<id>/visit/
 ```
 
 Creates a timestamped visit for the selected client.
 
-This endpoint represents the primary mailroom transaction:
+### Export Visits
 
-**Picked Up Mail**
+``` http
+GET /api/export/visits/
+```
 
----
+Supports year-based and custom date-range exports.
 
-# Project Structure
+Examples:
+
+``` http
+GET /api/export/visits/?year=2026&export_format=xlsx
+GET /api/export/visits/?year=2026&export_format=csv
+GET /api/export/visits/?start=2026-01-01&end=2026-03-31&export_format=csv
+```
+
+### Import Visits
+
+``` http
+POST /api/import/visits/
+```
+
+Accepts Sunrise Mailroom CSV or XLSX visit-log files and imports
+historical records. Existing visits are skipped to reduce accidental
+duplication.
+
+------------------------------------------------------------------------
+
+## Data & Export
+
+Version 2.0 includes a dedicated **Data & Export** screen.
+
+This keeps administrative tasks separate from the volunteer check-in
+workflow.
+
+### Google Sheets / XLSX Export
+
+The recommended export creates an `.xlsx` workbook with separate monthly
+worksheets, preserving the general structure staff are accustomed to
+from the previous spreadsheet workflow.
+
+The intended process is:
+
+``` text
+SQLite
+  ↓
+Sunrise Mailroom export
+  ↓
+XLSX file
+  ↓
+Manual import into Google Sheets
+```
+
+The application does **not** require the Google Sheets API, Google Cloud
+credentials, OAuth, or a Google Cloud billing account.
+
+To use an export in Google Sheets:
+
+1.  Export the desired year from Sunrise Mailroom.
+2.  Open Google Sheets.
+3.  Choose **File → Import → Upload**.
+4.  Select the downloaded Sunrise Mailroom XLSX file.
+
+The XLSX file can also be opened in compatible desktop spreadsheet
+software.
+
+### Universal CSV Export
+
+CSV export provides a simple, widely compatible format.
+
+Unlike the XLSX workbook, all exported visits are combined into a single
+table rather than separated into monthly tabs.
+
+### Custom Date Ranges
+
+The advanced export section allows staff to export only part of a year.
+
+Custom date-range exports currently use CSV.
+
+### Friendly Export Filenames
+
+Exports include both the period covered and the time the file was saved.
+
+For example:
+
+``` text
+Sunrise-Mailroom-Visits-For-2026-Saved-Sep-26-2026-12-50-PM.xlsx
+```
+
+This reduces confusion when staff create multiple exports and avoids
+relying on browser-generated names such as `(1)` and `(2)`.
+
+### Import
+
+The Data & Export screen can import Sunrise Mailroom CSV and XLSX visit
+logs.
+
+The importer reports:
+
+-   rows read
+-   visits added
+-   existing visits skipped
+-   new clients created
+-   invalid rows
+
+SQLite remains the application's source of truth; spreadsheet files are
+for interchange, reporting, and backup rather than live synchronization.
+
+------------------------------------------------------------------------
+
+## Project Structure
 
 The repository is divided into a Django backend and React frontend.
 
 A simplified layout:
 
-```text
+``` text
 sunrise-mailroom/
 ├── backend/
+│   ├── .venv/
 │   └── app/
 │       ├── config/
 │       ├── mailroom/
@@ -277,336 +456,351 @@ sunrise-mailroom/
 │       └── manage.py
 │
 ├── frontend/
-│   └── ...
+│   └── app/
+│       ├── src/
+│       │   ├── App.jsx
+│       │   ├── App.css
+│       │   ├── index.css
+│       │   └── main.jsx
+│       ├── package.json
+│       └── ...
 │
 └── README.md
 ```
 
----
+------------------------------------------------------------------------
 
-# Development Setup
+## Development Setup
 
-## Requirements
+### Requirements
 
 For local development you will need:
 
-- Git
-- Python 3
-- Node.js
-- npm
+-   Git
+-   Python 3
+-   Node.js
+-   npm
 
 A separate database server is **not** required.
 
----
-
-## Backend Setup
+### Backend Setup
 
 From the repository root:
 
-```bash
-cd backend/app
-```
-
-Create a Python virtual environment:
-
-### Linux / macOS
-
-```bash
+``` bash
+cd backend
 python3 -m venv .venv
 source .venv/bin/activate
+cd app
 ```
 
-### Windows PowerShell
+On Windows PowerShell:
 
-```powershell
+``` powershell
+cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+cd app
 ```
 
-Install the backend dependencies.
+Install the backend dependencies:
 
-If a `requirements.txt` file exists:
-
-```bash
+``` bash
 pip install -r requirements.txt
-```
-
-Otherwise install the current core dependencies:
-
-```bash
-pip install django djangorestframework django-cors-headers
 ```
 
 Run the database migrations:
 
-```bash
+``` bash
 python manage.py migrate
 ```
 
 Optionally create a Django administrator:
 
-```bash
+``` bash
 python manage.py createsuperuser
 ```
 
 Start Django:
 
-```bash
+``` bash
 python manage.py runserver
 ```
 
 The backend will normally be available at:
 
-```text
+``` text
 http://127.0.0.1:8000/
 ```
 
-The Django Admin interface is available at:
+The Django Admin interface is normally available at:
 
-```text
+``` text
 http://127.0.0.1:8000/admin/
 ```
 
----
+------------------------------------------------------------------------
 
-# Frontend Setup
+## Frontend Setup
+
+The React application lives under `frontend/app`.
 
 From the repository root:
 
-```bash
-cd frontend
+``` bash
+cd frontend/app
 npm install
 npm run dev
 ```
 
 The Vite development server will normally start at:
 
-```text
+``` text
 http://localhost:5173/
 ```
 
-During development, Django permits requests from the local Vite server through `django-cors-headers`.
+During development, Django can permit requests from the local Vite
+server through `django-cors-headers`.
 
----
+> **Node version:** use a Node.js version supported by the installed
+> Vite release. If Vite reports that the installed Node version is too
+> old, upgrade Node before building or running the frontend.
 
-# Starting Development
+------------------------------------------------------------------------
 
-A normal development session currently requires two terminals.
+## Starting Development
 
-## Terminal 1 — Django
+A normal development session uses two terminals.
 
-```bash
-cd backend/app
+### Terminal 1 --- Django
+
+``` bash
+cd backend
 source .venv/bin/activate
+cd app
 python manage.py runserver
 ```
 
 On Windows PowerShell:
 
-```powershell
-cd backend/app
+``` powershell
+cd backend
 .\.venv\Scripts\Activate.ps1
+cd app
 python manage.py runserver
 ```
 
-## Terminal 2 — React
+### Terminal 2 --- React
 
-```bash
-cd frontend
+``` bash
+cd frontend/app
 npm run dev
 ```
 
-Then open the frontend in a browser.
+Then open the Vite frontend in a browser.
 
----
+------------------------------------------------------------------------
 
-# Database and Migrations
+## Database and Migrations
 
 The development database is:
 
-```text
+``` text
 backend/app/db.sqlite3
 ```
 
 Changes to Django models should be migrated with:
 
-```bash
+``` bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
 Migration files should normally be committed to Git.
 
-Do **not** delete or recreate migrations once installations contain real mailroom data.
+Do **not** delete or recreate migrations once installations contain real
+mailroom data.
 
-During the initial prototype stage the database was intentionally reset while the schema was being redesigned. That should not become the normal upgrade process.
+During the prototype stage the database was intentionally reset while
+the schema was being redesigned. That should not become the normal
+upgrade process.
 
----
+### Backups
 
-# Time Handling
+Because SQLite is the authoritative data store, the production database
+should be backed up regularly.
+
+Spreadsheet exports are useful secondary backups and reporting
+artifacts, but they should not be treated as a replacement for backing
+up the SQLite database itself.
+
+------------------------------------------------------------------------
+
+## Time Handling
 
 The application is configured for:
 
-```text
+``` text
 America/Chicago
 ```
 
 with Django timezone support enabled.
 
-Visit timestamps should always be created by the backend rather than supplied by the volunteer-facing UI during normal operation.
+Visit timestamps are created by the backend rather than supplied by the
+volunteer-facing UI during normal operation.
 
----
+Exports use the mailroom's configured local timezone when creating
+human-readable filenames and spreadsheet output.
 
-# Planned MVP Interface
+------------------------------------------------------------------------
 
-The primary interface is being redesigned around the observed mailroom workflow.
+## Production Direction: Windows Standalone Application
 
-Conceptually:
+Version 2.0 is intended to be packaged for local use on a Windows
+mailroom computer.
 
-```text
-SUNRISE MAILROOM
+The goal is for day-to-day staff use to require **no command line, no
+development server setup, and no knowledge of Django or React**.
 
-Date of Birth
-[ MM ] [ DD ] [ YYYY ]
+The planned packaged application should:
 
-Name
-[____________________________]
+1.  launch the local Sunrise Mailroom backend
+2.  serve the built React frontend
+3.  use the local SQLite database
+4.  open the application for the volunteer
+5.  keep application data in a predictable local location
+6.  provide a straightforward path for backing up or moving the database
 
-Possible Matches
+The repository's development instructions above are for developers. They
+are **not** intended to be the normal operating procedure for mailroom
+volunteers once the Windows build is deployed.
 
-Haruto Kenji Kanamura Sato Ito
-DOB: May 10, 1985
-Last visit: August 8
-12 visits
+When packaging the application, preserving existing SQLite data across
+application upgrades is a critical requirement. The production database
+should live outside disposable application/build files so replacing the
+executable does not replace the mailroom's history.
 
-[ PICKED UP MAIL ]
-```
+------------------------------------------------------------------------
 
-Selecting **Picked Up Mail** records a new `Visit`, confirms the action, and prepares the interface for the next client.
+## Current Version 2.0 Feature Set
 
-The client-detail/history interface is secondary to this workflow.
+Version 2.0 includes:
 
----
+-   streamlined DOB/name client search
+-   flexible DOB entry and validation
+-   token-based full-name search
+-   client creation from an unsuccessful search
+-   timestamped visit recording
+-   visit confirmation and quick reset for the next person
+-   SQLite-backed visit history
+-   CSV export
+-   XLSX export with monthly worksheets
+-   custom date-range export
+-   CSV/XLSX historical visit import
+-   duplicate-skipping during import
+-   dedicated Data & Export interface
+-   friendly timestamped export filenames
+-   Django Admin for administrative corrections
 
-# Planned Features
+------------------------------------------------------------------------
 
-Development should remain driven by observed mailroom needs rather than speculative features.
+## Next Milestone
 
-## Near Term
+The next major milestone is **Windows packaging and deployment**.
 
-### Excel Export
+The objective is to turn the working Django + React application into a
+local Windows application that can be launched normally by mailroom
+staff without manually starting Django or Vite.
 
-Export mailroom activity as `.xlsx`.
+That work should prioritize:
 
-Likely export options include:
+-   a simple launcher or executable
+-   reliable startup and shutdown
+-   a production frontend build
+-   a predictable persistent-data location
+-   database backup and recovery
+-   upgrades that preserve the existing database
+-   useful local logging for troubleshooting
+-   minimal or zero configuration for volunteers
 
-- date range
-- individual month
-- all activity
-- client visit totals
+------------------------------------------------------------------------
 
-The export may include monthly worksheets similar to the mailroom's existing spreadsheet so that staff can continue using familiar reports while the underlying application maintains a normalized visit history.
+## Future Possibilities
 
-### Client History
-
-Provide a simple view showing:
-
-- full name
-- date of birth
-- total recorded visits
-- most recent visit
-- complete visit history
-
-### New Client Workflow
-
-If DOB/name search does not find the client, allow the volunteer to create the client with minimal data and immediately record the current visit.
-
-### Duplicate Protection
-
-Prevent accidental double-clicks from creating duplicate visits.
-
-The frontend should disable the pickup button while a visit is being recorded.
-
-### Better Search Feedback
-
-Clearly distinguish:
-
-- no DOB matches
-- DOB matches but no matching name
-- multiple possible clients
-- exact/likely match
-
----
-
-# Future Possibilities
-
-These features should only be added when real mailroom usage demonstrates a need for them.
+Development should remain driven by observed mailroom needs rather than
+speculative features.
 
 Possible future work includes:
 
-### XLSX Import
+### Client History
 
-Import existing client/history data from the mailroom's spreadsheets.
+A dedicated staff-facing history view could show:
+
+-   full name
+-   date of birth
+-   total recorded visits
+-   most recent visit
+-   complete visit history
 
 ### Backup Tools
 
-Provide an easy mechanism for nontechnical staff to back up:
+A future release may provide a one-click or otherwise staff-friendly
+mechanism for backing up:
 
-- the SQLite database
-- Excel exports
-
-### Windows Packaging
-
-Most production installations are expected to run on Windows laptops.
-
-A future deployment goal is therefore to provide a very simple launcher or packaged installation that:
-
-1. starts the backend
-2. serves/starts the frontend
-3. opens the application in the browser
-4. requires little or no command-line interaction
-
-### Authentication / Access Control
-
-The initial system may use a lightweight access mechanism appropriate for a volunteer-operated workstation.
-
-More sophisticated user accounts or audit trails can be added if operational requirements justify them.
+-   the SQLite database
+-   exported spreadsheets
 
 ### Reporting
 
 Potential reports include:
 
-- visits per day
-- visits per month
-- unique clients served
-- repeat visits
-- individual client visit history
+-   visits per day
+-   visits per month
+-   unique clients served
+-   repeat visits
+-   individual client visit history
+
+### Authentication / Access Control
+
+The initial standalone system may use a lightweight access approach
+appropriate for a volunteer-operated workstation.
+
+More sophisticated user accounts or audit trails can be added if
+operational requirements justify them.
 
 ### Additional Mailroom Workflows
 
-Package tracking, authorized pickup people, notes, or other workflows can be reconsidered if mailroom staff actually need them.
+Package tracking, authorized pickup people, notes, or other workflows
+can be reconsidered if mailroom staff actually need them.
 
 They are intentionally **not part of the current core architecture**.
 
----
+------------------------------------------------------------------------
 
-# Development Philosophy
+## Development Philosophy
 
-This project started with a broader feature set than the mailroom actually needed.
+This project started with a broader feature set than the mailroom
+actually needed.
 
-After observing the real workflow, the architecture was deliberately simplified.
+After observing the real workflow, the architecture was deliberately
+simplified.
 
 When considering a new feature, the default question should be:
 
-> Does this solve a problem that staff are actually experiencing at the mailroom window?
+> Does this solve a problem that staff are actually experiencing at the
+> mailroom window?
 
 If not, it probably does not belong in the application yet.
 
-The goal is not to build the most sophisticated mailroom management system possible.
+The goal is not to build the most sophisticated mailroom management
+system possible.
 
-The goal is to make the existing Sunrise mailroom workflow **faster, easier, and more reliable**.
+The goal is to make the existing Sunrise mailroom workflow **faster,
+easier, and more reliable**.
+
+------------------------------------------------------------------------
 
 ## Authors
-Jose F (Jeff) DeSouza
 
-Govind Menon
+-   Jose F. (Jeff) DeSouza
+-   Govind Menon
