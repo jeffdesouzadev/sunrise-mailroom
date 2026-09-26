@@ -482,7 +482,6 @@ function App() {
 
   const [exportStart, setExportStart] = useState("");
   const [exportEnd, setExportEnd] = useState("");
-  const [exportFormat, setExportFormat] = useState("csv");
 
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
@@ -610,11 +609,11 @@ async function searchClients(event) {
 }
 
 
-  function exportYear() {
+  function exportYear(format) {
     window.location.href =
       `${API_BASE}/export/visits/` +
       `?year=${exportYearValue}` +
-      `&export_format=${exportFormat}`;
+      `&export_format=${format}`;
   }
 
 
@@ -641,7 +640,7 @@ async function searchClients(event) {
       `${API_BASE}/export/visits/` +
       `?start=${encodeURIComponent(exportStart)}` +
       `&end=${encodeURIComponent(exportEnd)}` +
-      `&export_format=${exportFormat}`;
+      `&export_format=csv`;
   }
 
 
@@ -1337,50 +1336,17 @@ async function searchClients(event) {
 
             <div className="data-action-grid">
 
-              <section className="data-action-card">
-                <h3>
-                  Export Visit Log
-                </h3>
+              <section className="data-action-card export-card">
+                <h3>Export Visit Log</h3>
 
                 <p>
-                  Download visit history
-                  for local backup or review.
-                  CSV is recommended and works
-                  with most spreadsheet applications.
+                  Save a copy of Sunrise Mailroom visit history
+                  for Google Sheets, backup, or review.
                 </p>
-
-                <div className="export-format">
-                  <label
-                    className="field-label"
-                    htmlFor="export-format"
-                  >
-                    File type
-                  </label>
-
-                  <select
-                    id="export-format"
-                    className="export-format-select"
-                    value={exportFormat}
-                    onChange={(event) =>
-                      setExportFormat(
-                        event.target.value
-                      )
-                    }
-                  >
-                    <option value="csv">
-                      CSV — recommended
-                    </option>
-
-                    <option value="xlsx">
-                      Excel workbook (.xlsx)
-                    </option>
-                  </select>
-                </div>
-
 
                 <div className="year-export-section">
                   <label className="field-label">
-                    Year
+                    Choose a year
                   </label>
 
                   <div className="year-buttons">
@@ -1401,23 +1367,78 @@ async function searchClients(event) {
                       </button>
                     ))}
                   </div>
+                </div>
 
-                  <div className="year-export-action">
-                    <button
-                      type="button"
-                      className="export-year-button"
-                      onClick={exportYear}
-                    >
-                      Export {exportYearValue}
-                    </button>
+                <div className="export-choice google-export-choice">
+                  <div className="export-choice-heading">
+                    <h4>Google Sheets</h4>
+                    <span className="recommended-badge">
+                      Recommended
+                    </span>
+                  </div>
+
+                  <p>
+                    Creates a spreadsheet with a separate tab
+                    for each month. This file is designed to be
+                    imported into Google Sheets.
+                  </p>
+
+                  <button
+                    type="button"
+                    className="export-year-button google-export-button"
+                    onClick={() => exportYear("xlsx")}
+                  >
+                    Export {exportYearValue} for Google Sheets
+                  </button>
+
+                  <div className="google-import-help">
+                    <strong>How to open it in Google Sheets:</strong>
+
+                    <ol>
+                      <li>Open Google Sheets.</li>
+                      <li>
+                        Choose <strong>File → Import → Upload</strong>.
+                      </li>
+                      <li>
+                        Select the Sunrise Mailroom file
+                        you just downloaded.
+                      </li>
+                    </ol>
+
+                    <p className="export-note">
+                      Your monthly tabs will be ready to view
+                      and edit after the import.
+                    </p>
                   </div>
                 </div>
 
+                <div className="export-choice csv-export-choice">
+                  <h4>Universal CSV</h4>
+
+                  <p>
+                    Creates a simple file that can be opened
+                    by almost any spreadsheet or data program.
+                    All months are combined into one table
+                    instead of separate monthly tabs.
+                  </p>
+
+                  <button
+                    type="button"
+                    className="secondary-export-button"
+                    onClick={() => exportYear("csv")}
+                  >
+                    Export {exportYearValue} as CSV
+                  </button>
+                </div>
 
                 <div className="custom-export">
-                  <h4>
-                    Custom date range
-                  </h4>
+                  <h4>Custom date range</h4>
+
+                  <p className="export-note">
+                    Need only part of a year? Choose a start
+                    and end date below. Custom exports use
+                    the universal CSV format.
+                  </p>
 
                   <form
                     className="date-range-form"
@@ -1436,9 +1457,7 @@ async function searchClients(event) {
                         type="date"
                         value={exportStart}
                         onChange={(event) =>
-                          setExportStart(
-                            event.target.value
-                          )
+                          setExportStart(event.target.value)
                         }
                       />
                     </div>
@@ -1456,9 +1475,7 @@ async function searchClients(event) {
                         type="date"
                         value={exportEnd}
                         onChange={(event) =>
-                          setExportEnd(
-                            event.target.value
-                          )
+                          setExportEnd(event.target.value)
                         }
                       />
                     </div>
@@ -1467,7 +1484,7 @@ async function searchClients(event) {
                       className="export-range-button"
                       type="submit"
                     >
-                      Export Range
+                      Export Date Range as CSV
                     </button>
                   </form>
                 </div>
