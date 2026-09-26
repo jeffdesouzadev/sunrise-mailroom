@@ -1026,7 +1026,7 @@ function App() {
 
       }
 
-    }, 1000);
+    }, 3000);
 
 
 
@@ -2049,7 +2049,22 @@ async function searchClients(event) {
                     }
 
                   }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      const analysis = analyzeDobInput(dob);
 
+                      setDobStatus(analysis.status);
+                      setDobCandidates(
+                        analysis.candidates || []
+                      );
+
+                      if (analysis.status === "valid") {
+                        setDob(
+                          analysis.candidate.display
+                        );
+                      }
+                    }
+                  }}
                   autoFocus
 
                 />
