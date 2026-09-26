@@ -28,6 +28,18 @@ from .serializers import (
     VisitSerializer,
 )
 
+def build_export_filename(period_label, extension, local_timezone):
+    saved_at = timezone.now().astimezone(local_timezone)
+
+    timestamp = saved_at.strftime(
+        "%b-%d-%Y-%I-%M-%p"
+    )
+
+    return (
+        f"Sunrise-Mailroom-Visits-For-{period_label}"
+        f"-Saved-{timestamp}.{extension}"
+    )
+
 
 def home(request):
     return JsonResponse({
@@ -240,15 +252,23 @@ def export_visits(request):
         .order_by("visited_at")
     )
 
+    
+
     if export_format == "csv":
         if year_param:
-            filename = f"sunrise-visits-{year}.csv"
+            period_label = str(year)
         else:
-            filename = (
-                f"sunrise-visits-"
-                f"{start_date.isoformat()}-"
-                f"{end_date.isoformat()}.csv"
+            period_label = (
+                f"{start_date.strftime('%b-%d-%Y')}"
+                f"-Through-"
+                f"{end_date.strftime('%b-%d-%Y')}"
             )
+
+        filename = build_export_filename(
+            period_label,
+            "csv",
+            local_timezone,
+        )
 
         response = HttpResponse(
             content_type="text/csv; charset=utf-8",
@@ -433,13 +453,19 @@ def export_visits(request):
     output.seek(0)
 
     if year_param:
-        filename = f"sunrise-visits-{year}.xlsx"
+        period_label = str(year)
     else:
-        filename = (
-            f"sunrise-visits-"
-            f"{start_date.isoformat()}-"
-            f"{end_date.isoformat()}.xlsx"
+        period_label = (
+            f"{start_date.strftime('%b-%d-%Y')}"
+            f"-Through-"
+            f"{end_date.strftime('%b-%d-%Y')}"
         )
+
+    filename = build_export_filename(
+        period_label,
+        "xlsx",
+        local_timezone,
+    )
 
     response = HttpResponse(
         output.getvalue(),
